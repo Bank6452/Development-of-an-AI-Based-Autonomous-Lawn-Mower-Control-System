@@ -1,0 +1,12 @@
+14/3/2026-14:14
+	วิ่งตามpathได้แล้ว ด้วยEncoder,IMU
+
+16/3/2026-14:44
+	เดินหน้า1-3เมตร OK สั่งด้วย python3 /home/nhio/ros2_ws/calibrate_robot.py linear 1.0
+
+17/3/2026-17:30
+	จูนเลี้ยวด้วยมือสำเร็จ +-3ถึง5องศา python3 /home/nhio/ros2_ws/calibrate_robot.py angular 300
+
+18/3/2026-10:55
+	จูนเลี้ยวในRvizได้ แก้ที่ track_width = 0.70
+	

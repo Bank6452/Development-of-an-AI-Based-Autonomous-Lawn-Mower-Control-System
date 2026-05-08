@@ -1,0 +1,9 @@
+ntrip_client:
+  ros__parameters:
+    ip: "192.168.1.108"
+    port: 2116
+    mountpoint: "KMUTNB65"
+    user: "KMUTNB"
+    password: "65030"
+    serial_port: "/dev/serial/by-id/usb-FTDI_USB__-__Serial-if00-port0"
+    baudrate: 460800
