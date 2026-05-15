@@ -34,9 +34,9 @@ echo "🚀 Launching Gazebo Simulation & Systems..."
 
 gnome-terminal --tab --title="1. GAZEBO_SIM" -- bash -c "$SOURCE_CMD && ros2 launch robot_bridge simulation.launch.py; exec bash" 
 sleep 8
-gnome-terminal --tab --title="2. GEOFENCE (SAFETY)" -- bash -c "sleep 5 && $SOURCE_CMD && ros2 run robot_bridge geofence_enforcer --ros-args -p geofence_file:=/home/nhio/ros2_ws/lawn_geofence_sim.yaml; exec bash"
+gnome-terminal --tab --title="2. GEOFENCE (SAFETY)" -- bash -c "sleep 5 && $SOURCE_CMD && ros2 run robot_bridge geofence_enforcer --ros-args -p geofence_file:=${WS_DIR}/config/lawn_geofence_sim.yaml; exec bash"
 sleep 10
-gnome-terminal --tab --title="3. LAWN_PLANNER" -- bash -c "sleep 8 && $SOURCE_CMD && ros2 run robot_bridge lawn_planner --ros-args -p geofence_file:=/home/nhio/ros2_ws/lawn_geofence_sim.yaml; exec bash"
+gnome-terminal --tab --title="3. LAWN_PLANNER" -- bash -c "sleep 8 && $SOURCE_CMD && ros2 run robot_bridge lawn_planner --ros-args -p geofence_file:=${WS_DIR}/config/lawn_geofence_sim.yaml; exec bash"
 sleep 12
 gnome-terminal --tab --title="4. MOWING_EXECUTOR" -- bash -c "sleep 12 && $SOURCE_CMD && echo 'พิมพ์ go แล้วกด Enter เพื่อเริ่มตัดหญ้าตามเส้นทาง' && ros2 run robot_bridge mow_zigzag; exec bash"
 

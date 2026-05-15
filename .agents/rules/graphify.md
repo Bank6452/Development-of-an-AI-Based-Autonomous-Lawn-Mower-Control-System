@@ -13,7 +13,7 @@ You MUST follow this protocol for every task involving code modification or arch
 
 ### 3. Post-Implementation: Graph Refresh
 - AFTER every significant code change, you MUST run:
-  `PYTHONPATH=/home/nhio/.local/lib/python3.10/site-packages python3 -m graphify update .`
+  `PYTHONPATH=$HOME/.local/lib/python3.10/site-packages python3 -m graphify update .`
 - This ensures the knowledge graph remains a "Source of Truth" for subsequent turns.
 
 ### 4. Verification

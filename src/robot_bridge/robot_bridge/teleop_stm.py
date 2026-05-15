@@ -5,7 +5,7 @@ from std_msgs.msg import Int8, Float64, String, Empty
 from sensor_msgs.msg import Imu, LaserScan, NavSatFix
 from visualization_msgs.msg import Marker
 from nav_msgs.msg import Odometry
-from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
+from diagnostic_msgs.msg import DiagnosticStatus, KeyValue, DiagnosticArray
 import math
 import serial
 import serial.tools.list_ports
@@ -17,7 +17,7 @@ import os
 
 # 🟢 ตั้งค่า Offset สำหรับ BNO055 (องศา)
 # ปรับเลขนี้เพื่อให้ทิศหน้าของหุ่นยนต์ตรงกับทิศเหนือจริง
-BNO_OFFSET_DEG = 160.0
+BNO_OFFSET_DEG = -190.0
 
 class TeleopSTMNode(Node):
     def __init__(self):
@@ -56,8 +56,11 @@ class TeleopSTMNode(Node):
         self.heading_pub = self.create_publisher(Float64, '/compass/heading', 10)
         self.cal_pub = self.create_publisher(String, '/imu/calibration', 10)
 
-        # Diagnostic Mirror Topics (สำหรับการส่องโปรโตคอล)
         self.pub_serial_tx = self.create_publisher(String, '/serial/raw_tx', 10)
+        self.pub_serial_rx = self.create_publisher(String, '/serial/raw_rx', 10)
+
+        # 🚀 ย้ายมาไว้ตรงนี้เพื่อให้ระบบเริ่มส่ง Heartbeat ทันทีที่เปิดโปรแกรม
+        self.timer = self.create_timer(0.1, self.heartbeat_loop)
         self.pub_serial_rx = self.create_publisher(String, '/serial/raw_rx', 10)
 
         # สร้าง Thread สำหรับจัดการการเชื่อมต่อ (Auto-Reconnect)
@@ -107,9 +110,6 @@ class TeleopSTMNode(Node):
         self.pause_start_time = None
         self.VERIFY_DURATION = 2.0     # วินาทีที่ต้องปลอดภัยต่อเนื่องก่อนเดินต่อ
         self.MAX_PAUSE_DURATION = 60.0  # หยุดรอนานสุด 60 วินาทีก่อนยกเลิกงาน
-
-        # Timer ส่งคำสั่งซ้ำๆ (Heartbeat) ที่ 10Hz (0.1 วิ) เหมือนใน main_control.py
-        self.timer = self.create_timer(0.1, self.heartbeat_loop)
     
         self.current_vL = 0.0  # m/s ล้อซ้าย
         self.current_vR = 0.0  # m/s ล้อขวา
@@ -140,6 +140,11 @@ class TeleopSTMNode(Node):
 
         # --- 📢 Safety Status Publishers ---
         self.pub_lidar_status = self.create_publisher(String, '/lidar_safety_status', 10)
+        self.pub_status = self.create_publisher(String, '/robot/status', 10)
+        self.pub_battery = self.create_publisher(DiagnosticArray, '/robot/battery', 10)
+        self.pub_volt = self.create_publisher(Float64, '/battery/voltage', 10)
+        self.pub_curr = self.create_publisher(Float64, '/battery/current', 10)
+        self.last_reported_status = ""
 
     def load_offset(self):
         """โหลดค่า Offset จากไฟล์ ถ้าไม่มีให้ใช้ค่า Default (160.0)"""
@@ -254,13 +259,25 @@ class TeleopSTMNode(Node):
         v_angular = msg.angular.z
 
         # Differential Drive: แปลง linear.x / angular.z → vL / vR (m/s)
-        track_width = 0.70  # เมตร (ต้องตรงกับหุ่นจริง)
+        track_width = 0.50  # เมตร (แก้ไขจาก 0.70 ตามค่าจริง 50cm)
         vL = v_linear - (v_angular * track_width / 2.0)
         vR = v_linear + (v_angular * track_width / 2.0)
 
+        # 🚀 Deadband Compensation: ชดเชยแรงเสียดทานของสายพานตอนหมุนตัว
+        # ถ้ารถพยายามหมุนตัวอยู่กับที่ (v_linear ใกล้ 0) แต่แรงไม่พอ
+        if abs(v_linear) < 0.05 and abs(v_angular) > 0.05:
+            MIN_SPIN_SPEED = 0.15  # ความเร็วล้อขั้นต่ำที่ทำให้สายพานขยับได้บนหญ้า (m/s)
+            if abs(vL) < MIN_SPIN_SPEED:
+                vL = -MIN_SPIN_SPEED if vL < 0 else MIN_SPIN_SPEED
+            if abs(vR) < MIN_SPIN_SPEED:
+                vR = -MIN_SPIN_SPEED if vR < 0 else MIN_SPIN_SPEED
+
+        # 🔍 DEBUG: เช็คว่าทำไมความเร็วถึงเหลือ 0.06
+        self.get_logger().info(f"DEBUG: Recv v_ang={v_angular:.2f}, vL_raw={vL:.3f}, vR_raw={vR:.3f}")
+
         # ✅ อนุญาตให้ความเร็วล้อตอนเลี้ยวสูงกว่า max_speed_ms ได้ (สูงสุดที่ 1.2 m/s เพื่อความแรง)
         # เพื่อรองรับการหมุนตัวที่ 2.5 Rad/s
-        abs_max = 1.2 
+        abs_max = 0.4
         self.current_vL = max(-abs_max, min(abs_max, vL))
         self.current_vR = max(-abs_max, min(abs_max, vR))
         self.last_cmd_time = self.get_clock().now()
@@ -302,13 +319,37 @@ class TeleopSTMNode(Node):
             self.current_vR = 0.0
 
         # --- 🛡️ AI Vision Heartbeat Safety ---
+        status = "OK"
         if not self.bypass_safety:
             if (now - self.last_vision_msg_time).nanoseconds > 2e9: # 2.0 seconds
                 if self.vision_safe:
                     self.get_logger().error("⚠️ [AI VISION] Timeout! AI might have crashed. Stopping for safety.")
                     self.vision_safe = False
+                status = "VISION_TIMEOUT"
         else:
             self.vision_safe = True  # bypass mode → ไม่สนใจ vision
+
+        # --- 🔍 Determine Overall Status ---
+        if not self.vision_safe: status = "VISION_TIMEOUT"
+        elif not self.lidar_safe: status = "LIDAR_OBSTACLE"
+        elif self.is_paused: status = "WAITING_VERIFY"
+        elif (now - self.last_cmd_time).nanoseconds > 5e8: # 0.5s Timeout for Nav2
+            status = "WAITING_NAV2"
+        
+        if hasattr(self, 'last_emergency_state') and self.last_emergency_state == 1:
+            status = "EMERGENCY_STOP"
+
+        # Publish Status (Only when changed to avoid spam)
+        if status != self.last_reported_status:
+            msg = String()
+            msg.data = status
+            self.pub_status.publish(msg)
+            # เปลี่ยนเป็น warn เพื่อให้เป็นสีเหลือง สังเกตง่าย
+            self.get_logger().warn(f"🔄 STATUS CHANGED: {status}")
+            self.last_reported_status = status
+
+        # เก็บสถานะปัจจุบันไว้ส่งไปพร้อม TX
+        self.current_status_str = status
 
         # ส่ง Marker ไปโชว์ใน RViz
         self.publish_safety_marker()
@@ -370,8 +411,13 @@ class TeleopSTMNode(Node):
         self.pause_start_time = None
 
     def send_serial(self, data: str):
-        # ปรับเป็น debug เพื่อไม่ให้รกหน้าจอ (เพราะมันส่ง 10 ครั้งต่อวินาที)
-        self.get_logger().debug(f"[TX to STM32] -> {data.strip()}")
+        # เพิ่มสถานะเข้าไปใน Log เพื่อให้เห็นชัดๆ ทุกบรรทัด
+        status_tag = getattr(self, 'current_status_str', 'UNKNOWN')
+        if status_tag == "OK":
+            self.get_logger().info(f"📤 [TX][{status_tag}] -> {data.strip()}")
+        else:
+            # ถ้าไม่ปกติ ให้เป็นสีเหลือง
+            self.get_logger().warn(f"📤 [TX][{status_tag}] -> {data.strip()}")
         
         if self.is_connected and self.serial_conn is not None and self.serial_conn.is_open:
             try:
@@ -407,12 +453,37 @@ class TeleopSTMNode(Node):
     def process_stm32_data(self, line):
         line = line.strip()
         # 🔋 รับข้อมูลแบตเตอรี่ (Format: B,Volt,Curr)
-        if "B," in line:
+        if line.startswith("B,"):
             parts = line.split(',')
             if len(parts) >= 3:
                 try:
-                    self.battery_volt = float(parts[1])
-                    self.battery_curr = float(parts[2])
+                    # ค่าดิบจาก STM
+                    raw_volt = float(parts[1])
+                    # 1. Calibration: ปรับจูนให้ตรงกับมิเตอร์ (25.5 / 26.43 = 0.965)
+                    calibrated_volt = raw_volt * 0.965
+                    
+                    # 2. Filter: กรองให้นิ่ง (Low-pass filter / EMA)
+                    # ใช้ค่าใหม่ 10% ค่าเดิม 90% เพื่อลดการกระโดด
+                    # 2. Filter Volt: กรองให้นิ่ง
+                    if self.battery_volt == 0.0:
+                        self.battery_volt = calibrated_volt
+                    else:
+                        self.battery_volt = (self.battery_volt * 0.90) + (calibrated_volt * 0.10)
+                    
+                    # --- จูน Amp (INA226) ---
+                    raw_curr = float(parts[2])
+                    # 1. Calibration: ปรับจูนใหม่ตามค่าจริง (Idle 0.46->0.4, Load 3.45->4.44)
+                    # สูตรใหม่: (raw * 1.35) - 0.22
+                    calibrated_curr = (raw_curr * 1.35) - 0.22
+                    
+                    # ป้องกันค่าติดลบตอน Idle
+                    if calibrated_curr < 0.05: calibrated_curr = 0.0
+                    
+                    # 2. Filter Amp: กรองกระแสนิ่งๆ
+                    if self.battery_curr == 0.0:
+                        self.battery_curr = calibrated_curr
+                    else:
+                        self.battery_curr = (self.battery_curr * 0.85) + (calibrated_curr * 0.15)
                     
                     # ส่งข้อมูลออกไปให้ Dashboard
                     diag = DiagnosticStatus()
@@ -487,7 +558,7 @@ class TeleopSTMNode(Node):
                     # 2. สเกลค่า Ticks ให้กลายเป็น เมตร (Meters) และ m/s
                     # ⚠️ จูนค่า TICKS_PER_METER ล่าสุด (จากสคริปต์ 3ม. แต่เดินจริงได้ 2.82ม.)
                     TICKS_PER_METER = 13298.0 
-                    track_width = 0.70 # เมตร
+                    track_width = 0.50 # เมตร (แก้ไขจาก 0.70 ตามค่าจริง 50cm)
                     
                     vL = vL_ticks / TICKS_PER_METER
                     vR = vR_ticks / TICKS_PER_METER
@@ -694,10 +765,11 @@ class TeleopSTMNode(Node):
         
         self.lidar_min_dist = min_dist
         
-        # 2. ตัดสินใจ (ต้องเจออุปสรรคติดต่อกันเพื่อกัน Noise)
-        if len(danger_points) >= 3: 
+        # 2. ตัดสินใจ (ต้องเจออุปสรรคติดต่อกันเพื่อกัน Noise/Grass)
+        # ปรับจาก 10 เป็น 25 เพื่อลดผลกระทบจากเศษหญ้าหรือฝุ่น
+        if len(danger_points) >= 10: 
             if self.lidar_safe:
-                self.get_logger().warn(f"🚨 [LiDAR] OBSTACLE DETECTED at {min_dist:.2f}m")
+                self.get_logger().warn(f"🚨 [LiDAR] OBSTACLE DETECTED at {min_dist:.2f}m ({len(danger_points)} pts)")
                 self.lidar_safe = False
         else:
             # ถ้าไม่เจอจุดอันตรายเลย ให้รีเซ็ตกลับเป็น Safe

@@ -1,9 +1,14 @@
-# ROS2 folders
+# ============================================================
+# ROS2 Build Artifacts
+# ============================================================
 build/
 install/
 log/
+_old_src_artifacts/
 
+# ============================================================
 # Python
+# ============================================================
 __pycache__/
 *.pyc
 *.pyo
@@ -14,16 +19,16 @@ venv/
 .env
 .venv
 pip-log.txt
-pip-delete-this-directory.txt
 .tox/
 .coverage
 .cache
 nosetests.xml
 coverage.xml
 *.cover
-*.log
 
-# C++ / IDE
+# ============================================================
+# IDE / Editor
+# ============================================================
 .vscode/
 .idea/
 *.swp
@@ -31,12 +36,37 @@ coverage.xml
 *~
 .DS_Store
 
-# Large files (Optional but recommended to keep out of GitHub)
-# ถ้าอยากเอา YOLO ขึ้น GitHub ด้วยให้คอมเมนต์บรรทัดล่างนี้ออกครับ
-# แต่ GitHub มี limit 100MB ต่อไฟล์
-# *.pt
+# ============================================================
+# Large / Generated Files
+# ============================================================
+# YOLO model (>100MB — GitHub จะ reject)
+*.pt
 
-# Backup files
-*.backup_*
+# Zip / archive (มีอยู่แล้วใน repo ไม่ต้อง track เพิ่ม)
 *.zip
 *.tar.gz
+*.rar
+
+# Backup files
+*.backup
+*.backup_*
+*.bak
+
+# ============================================================
+# Logs
+# ============================================================
+*.log
+logs_diag/hw.log
+logs_diag/loc.log
+logs_diag/nav.log
+
+# ============================================================
+# Code analysis output
+# ============================================================
+graphify-out/
+
+# ============================================================
+# Colcon / ROS2 misc
+# ============================================================
+COLCON_IGNORE
+.colcon_install_layout

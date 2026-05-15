@@ -19,8 +19,9 @@ class NtripClient(Node):
         self.declare_parameter('ip', '127.0.0.1', str_descriptor)
         self.declare_parameter('port', 2101)
         self.declare_parameter('mountpoint', 'VRS_RTCM32', str_descriptor)
-        self.declare_parameter('user', 'user', str_descriptor)
-        self.declare_parameter('password', 'password', str_descriptor)
+        self.declare_parameter('user', 'user')
+        from rcl_interfaces.msg import ParameterDescriptor
+        self.declare_parameter('password', 'password', ParameterDescriptor(dynamic_typing=True))
         self.declare_parameter('serial_port', '/dev/gps_rtk', str_descriptor)
         self.declare_parameter('baudrate', 460800)
         

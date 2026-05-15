@@ -13,12 +13,13 @@ sleep 2
 
 # 2. Start logs
 echo "Starting Diagnostic Logs (20 seconds)..."
-LOG_DIR="/home/nhio/ros2_ws/logs_diag"
+WS_DIR=$(pwd)
+LOG_DIR="${WS_DIR}/logs_diag"
 mkdir -p $LOG_DIR
 
 # Sourcing
 source /opt/ros/humble/setup.bash
-source /home/nhio/ros2_ws/install/setup.bash
+source ${WS_DIR}/install/setup.bash
 
 # Hardware
 echo "Launching Hardware..."

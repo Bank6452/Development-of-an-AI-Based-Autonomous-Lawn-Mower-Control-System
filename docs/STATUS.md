@@ -102,8 +102,8 @@ The real robot has a RealSense D435i IMU mounted **sideways** (X-axis points up)
 
 | File | Path | Role |
 |---|---|---|
-| Sim Geofence | `/home/nhio/ros2_ws/lawn_geofence_sim.yaml` | GPS points for sim boundary |
-| Real Geofence | `/home/nhio/ros2_ws/lawn_geofence.yaml` | GPS points for real field |
+| Sim Geofence | `~/ros2_ws/lawn_geofence_sim.yaml` | GPS points for sim boundary |
+| Real Geofence | `~/ros2_ws/lawn_geofence.yaml` | GPS points for real field |
 | Safety Node | `src/robot_bridge/robot_bridge/geofence_enforcer.py` | Velocity gatekeeper |
 | Path Gen | `src/robot_bridge/robot_bridge/lawn_planner.py` | Zigzag path from geofence |
 | Path Exec | `src/robot_bridge/robot_bridge/mow_zigzag.py` | Nav2 Waypoint Follower |

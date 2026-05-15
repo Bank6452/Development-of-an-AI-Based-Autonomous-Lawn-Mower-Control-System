@@ -16,7 +16,8 @@ class GeofenceSystem(Node):
     def __init__(self, start_mode='enforce'):
         super().__init__('geofence_system')
         
-        self.declare_parameter('geofence_file', '/home/nhio/ros2_ws/lawn_geofence.yaml')
+        default_geofence = os.path.join(os.path.expanduser('~'), 'ros2_ws', 'lawn_geofence.yaml')
+        self.declare_parameter('geofence_file', default_geofence)
         self.save_path = self.get_parameter('geofence_file').get_parameter_value().string_value
         
         self.safety_margin_meters = 0.20 # ✅ ขยายระยะให้หุ่นมีช่องว่างเลี้ยว ไม่เบรกจุกจิกจนกระตุก

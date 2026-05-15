@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mower Bot | Premium Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    
+    <!-- ROS Web Tools -->
+    <script src="https://cdn.jsdelivr.net/npm/eventemitter2@6.4.9/lib/eventemitter2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/roslib@1.3.0/build/roslib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ros3d@1.1.0/build/ros3d.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.10.1/dist/nipplejs.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-tractor"></i>
+                <span>MOWER<span>BOT</span></span>
+            </div>
+            
+            <nav class="nav-menu">
+                <div class="nav-item active" data-tab="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" data-tab="map">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <span>Live Map</span>
+                </div>
+                <div class="nav-item" data-tab="camera">
+                    <i class="fas fa-video"></i>
+                    <span>Vision</span>
+                </div>
+                <div class="nav-item" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
+            </nav>
+
+            <div class="connection-status" id="ros-status">
+                <div class="status-indicator offline"></div>
+                <span class="status-text">Disconnected</span>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search parameters...">
+                </div>
+                <div class="top-actions">
+                    <div class="action-btn emergency" id="btn-emergency">
+                        <i class="fas fa-stop-circle"></i> EMERGENCY STOP
+                    </div>
+                    <div class="user-profile">
+                        <img src="https://api.dicebear.com/6.x/avataaars/svg?seed=Mower" alt="User">
+                    </div>
+                </div>
+            </header>
+
+            <div class="dashboard-grid">
+                <!-- Left Column: Visuals -->
+                <div class="visual-section">
+                    <!-- RViz-like Map Container -->
+                    <div class="card map-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-globe"></i> 3D Visualization</h3>
+                            <div class="card-tools">
+                                <button id="reset-view"><i class="fas fa-sync-alt"></i></button>
+                                <button id="toggle-path"><i class="fas fa-route"></i></button>
+                            </div>
+                        </div>
+                        <div id="map-container" class="visual-viewport">
+                            <div class="loader">
+                                <div class="spinner"></div>
+                                <p>Initializing 3D World...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Camera Stream -->
+                    <div class="card camera-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-camera"></i> AI Vision Stream</h3>
+                            <span class="badge" id="vision-fps">0 FPS</span>
+                        </div>
+                        <div class="visual-viewport camera-viewport">
+                            <img id="camera-stream" src="" alt="Waiting for stream..." onerror="this.src='https://placehold.co/640x480/1a1a2e/ffffff?text=Stream+Offline'">
+                            <div class="detection-overlay" id="detection-box">
+                                <!-- Dynamic detections will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Telemetry & Controls -->
+                <div class="telemetry-section">
+                    <!-- Status Overview -->
+                    <div class="status-cards">
+                        <div class="status-card battery">
+                            <div class="status-icon"><i class="fas fa-battery-three-quarters"></i></div>
+                            <div class="status-info">
+                                <span class="label">Battery</span>
+                                <span class="value" id="val-battery">--.- V</span>
+                                <div class="progress-bar"><div class="fill" style="width: 0%" id="bar-battery"></div></div>
+                            </div>
+                        </div>
+                        <div class="status-card gps">
+                            <div class="status-icon"><i class="fas fa-satellite"></i></div>
+                            <div class="status-info">
+                                <span class="label">GPS Status</span>
+                                <span class="value" id="val-gps">NO DATA</span>
+                                <span class="sub-value" id="val-gps-acc">Acc: -- cm</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sensor Grid -->
+                    <div class="card telemetry-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-microchip"></i> System Telemetry</h3>
+                        </div>
+                        <div class="sensor-grid">
+                            <div class="sensor-item">
+                                <span class="s-label">Heading</span>
+                                <span class="s-value" id="val-heading">000°</span>
+                            </div>
+                            <div class="sensor-item">
+                                <span class="s-label">Linear Speed</span>
+                                <span class="s-value" id="val-speed">0.00 m/s</span>
+                            </div>
+                            <div class="sensor-item">
+                                <span class="s-label">Lidar Safety</span>
+                                <span class="s-value" id="val-lidar">SAFE</span>
+                            </div>
+                            <div class="sensor-item">
+                                <span class="s-label">Uptime</span>
+                                <span class="s-value" id="val-uptime">00:00:00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Control Panel -->
+                    <div class="card control-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-gamepad"></i> Manual Control</h3>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="manual-mode">
+                                <label for="manual-mode"></label>
+                            </div>
+                        </div>
+                        <div class="joystick-container">
+                            <div id="joystick"></div>
+                            <div class="joystick-guide">
+                                <span>Drag to Drive</span>
+                            </div>
+                        </div>
+                        <div class="control-btns">
+                            <button class="btn secondary" id="btn-home"><i class="fas fa-home"></i> HOME</button>
+                            <button class="btn primary" id="btn-start"><i class="fas fa-play"></i> START MISSION</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

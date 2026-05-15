@@ -17,8 +17,8 @@ class VisionNode(Node):
         
         # --- Parameters ---
         self.declare_parameter('model_path', 'yolo11n.pt')
-        self.declare_parameter('stop_distance', 2.0)
-        self.declare_parameter('fence_distance', 1.0)
+        self.declare_parameter('stop_distance', 4.0)
+        self.declare_parameter('fence_distance', 1.5)
         
         self.stop_dist = self.get_parameter('stop_distance').get_parameter_value().double_value
         self.fence_dist = self.get_parameter('fence_distance').get_parameter_value().double_value
@@ -40,22 +40,61 @@ class VisionNode(Node):
         self.is_processing = False
         
         # --- ROS2 Sub/Pub ---
+        from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+        depth_qos = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            depth=10
+        )
         self.depth_sub = self.create_subscription(
-            Image, '/camera/camera/depth/image_rect_raw', self.depth_callback, qos_profile_sensor_data)
+            Image, '/camera/camera/depth/image_rect_raw', self.depth_callback, depth_qos)
         self.color_sub = self.create_subscription(
-            Image, '/camera/camera/color/image_raw', self.color_callback, qos_profile_sensor_data)
+            Image, '/camera/camera/color/image_raw', self.color_callback, 10)
         
         self.stop_pub = self.create_publisher(String, '/cmd_emergency', 10)
         self.debug_img_pub = self.create_publisher(Image, '/camera/yolo/debug_image', 10)
         self.perf_pub = self.create_publisher(String, '/camera/yolo/performance', 10)
         
-        self.get_logger().info(f"✅ AI Safety Active (Ignoring Plants Mode)")
-
+        # --- CONFIRMATION LOGIC ---
+        self.ai_confirm_counter = 0
+        self.fence_confirm_counter = 0
+        self.CONFIRM_FRAMES_AI = 5    # ที่ 15 FPS -> 5 เฟรม = ~0.33 วินาที
+        self.CONFIRM_FRAMES_FENCE = 5 # เพิ่มหน่วงเวลา 5 เฟรม กรองแสงสะท้อนได้ดีกว่า
+        
+        self.last_stop_time = 0.0
+        self.MIN_STOP_DURATION = 0.5 # วินาที
+        
     def depth_callback(self, msg):
         try:
-            self.latest_depth = self.bridge.imgmsg_to_cv2(msg, "16UC1")
-        except:
-            pass
+            self.latest_depth = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+        except Exception as e:
+            self.get_logger().error(f"❌ Depth Callback Error: {e}")
+
+    def get_box_distance(self, x1, y1, x2, y2):
+        if self.latest_depth is None:
+            return 0.0
+        
+        dh, dw = self.latest_depth.shape
+        
+        # เลือกเฉพาะพื้นที่ตรงกลางของ Bounding Box (ประมาณ 40% ของพื้นที่กลาง) 
+        # เพื่อลดโอกาสที่จะไปอ่านโดนพื้นหลังหรือขอบของวัตถุ
+        margin_w = int((x2 - x1) * 0.3)
+        margin_h = int((y2 - y1) * 0.3)
+        
+        bx1 = max(0, x1 + margin_w)
+        bx2 = min(dw - 1, x2 - margin_w)
+        by1 = max(0, y1 + margin_h)
+        by2 = min(dh - 1, y2 - margin_h)
+        
+        if bx1 >= bx2 or by1 >= by2:
+            return 0.0
+            
+        roi = self.latest_depth[by1:by2, bx1:bx2]
+        valid_pixels = roi[roi > 0]
+        
+        if len(valid_pixels) > 10:
+            return float(np.median(valid_pixels)) / 1000.0
+        return 0.0
 
     def color_callback(self, msg):
         if self.is_processing or self.latest_depth is None:
@@ -67,6 +106,12 @@ class VisionNode(Node):
         try:
             original_header = msg.header
             color_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            
+            # --- 0. Fix Resolution Mismatch ---
+            # Resize color image to match depth map dimensions (Ensures Numpy array shapes match)
+            dh, dw = self.latest_depth.shape
+            color_image = cv2.resize(color_image, (dw, dh))
+            
             h, w = color_image.shape[:2]
             
             # --- 1. AI Object Detection First ---
@@ -90,15 +135,23 @@ class VisionNode(Node):
                     
                     # 🛑 ถ้าเป็น คน/หมา/แมว ให้เช็คระยะเพื่อสั่งหยุด
                 elif label in ['person', 'dog', 'cat']:
-                    cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-                    if cy < h and cx < w:
-                        dist_m = self.latest_depth[cy, cx] / 1000.0
-                        if dist_m < 2.0:
+                    dist_m = self.get_box_distance(x1, y1, x2, y2)
+                    
+                    if dist_m > 0:
+                        self.get_logger().info(f"🔍 AI Found {label} at {dist_m:.2f}m")
+                        if dist_m < self.stop_dist:
                             ai_danger_detected = True
+                            cv2.putText(color_image, f"AI STOP: {label} {dist_m:.2f}m", (x1, y1-10),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    else:
+                        # ถ้าอ่านค่าระยะไม่ได้เลย (dist_m == 0) อาจจะเพราะคนอยู่ใกล้เกินไป หรือเซนเซอร์บอด
+                        # ในกรณีนี้เราอาจจะเลือก "ชะลอ" หรือ "หยุดเพื่อความปลอดภัย" 
+                        # แต่เบื้องต้นจะไม่สั่งหยุดทันทีเพื่อแก้ปัญหาของ User
+                        self.get_logger().warn(f"⚠️ AI Found {label} but depth is invalid!")
             
             # --- 2. Depth Safety Fence (พร้อมระบบข้ามต้นไม้) ---
             roi_x1, roi_x2 = int(w*0.0), int(w*1.0)
-            roi_y1, roi_y2 = int(h*0.4), int(h*0.9)
+            roi_y1, roi_y2 = int(h*0.2), int(h*0.65)
             
             depth_roi = self.latest_depth[roi_y1:roi_y2, roi_x1:roi_x2].copy()
             mask_roi = ignore_mask[roi_y1:roi_y2, roi_x1:roi_x2]
@@ -118,11 +171,35 @@ class VisionNode(Node):
                 cv2.putText(color_image, f"FENCE STOP: {avg_dist:.2f}m", (10, roi_y1-10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-            # --- 3. Visualization & Publishing ---
+            # --- 3. Confirmation Logic ---
+            # AI Confirmation
+            if ai_danger_detected:
+                self.ai_confirm_counter += 1
+            else:
+                self.ai_confirm_counter = 0
+            
+            # Fence Confirmation
+            if fence_triggered:
+                self.fence_confirm_counter += 1
+            else:
+                self.fence_confirm_counter = 0
+            
+            # Decision
+            should_stop = (self.ai_confirm_counter >= self.CONFIRM_FRAMES_AI) or \
+                          (self.fence_confirm_counter >= self.CONFIRM_FRAMES_FENCE)
+            
+            now = time.time()
+            # ระบบ Hysteresis: ถ้าสั่งหยุดแล้ว ให้รักษาสถานะหยุดไว้อย่างน้อย MIN_STOP_DURATION
+            if should_stop:
+                self.last_stop_time = now
+            
+            is_currently_braking = (now - self.last_stop_time < self.MIN_STOP_DURATION)
+
+            # --- 4. Visualization & Publishing ---
             annotated_frame = results.plot()
             cv2.rectangle(annotated_frame, (roi_x1, roi_y1), (roi_x2, roi_y2), fence_color, 2)
             
-            if fence_triggered or ai_danger_detected:
+            if is_currently_braking:
                 self.stop_pub.publish(String(data="E,1"))
             else:
                 self.stop_pub.publish(String(data="E,0"))

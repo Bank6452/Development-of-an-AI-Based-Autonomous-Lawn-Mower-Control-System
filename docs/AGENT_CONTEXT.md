@@ -73,7 +73,7 @@ cd ~/ros2_ws
 ./start_sim.sh
 # Then in new terminals:
 ros2 run robot_bridge geofence_enforcer  # Pick mode 1
-ros2 run robot_bridge lawn_planner --ros-args -p geofence_file:=/home/nhio/ros2_ws/lawn_geofence_sim.yaml
+ros2 run robot_bridge lawn_planner --ros-args -p geofence_file:=~/ros2_ws/lawn_geofence_sim.yaml
 ros2 run robot_bridge mow_zigzag         # Type 'go' to start
 ```
 

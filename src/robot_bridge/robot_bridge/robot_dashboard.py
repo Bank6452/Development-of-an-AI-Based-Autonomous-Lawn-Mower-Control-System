@@ -176,7 +176,7 @@ class RobotDashboard(Node):
             # หรือ 12V (Full ~13.5V, Low ~11V)
             # ในที่นี้ขอกลางๆ ไว้ก่อน ปรับได้ครับ
             if self.battery_v > 16.0: # น่าจะเป็นระบบ 24V
-                bat_pct = int(((self.battery_v - 21.0) / (28.0 - 21.0)) * 100)
+                bat_pct = int(((self.battery_v - 22.0) / (26.0 - 22.0)) * 100)
             else: # น่าจะเป็นระบบ 12V
                 bat_pct = int(((self.battery_v - 10.5) / (13.5 - 10.5)) * 100)
             bat_pct = max(0, min(100, bat_pct))

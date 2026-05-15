@@ -19,7 +19,7 @@ class AutoDatumNode(Node):
     def __init__(self):
         super().__init__('auto_datum_node')
 
-        self.declare_parameter('geofence_file', '/home/nhio/ros2_ws/lawn_geofence.yaml')
+        self.declare_parameter('geofence_file', '~/ros2_ws/lawn_geofence.yaml')
         self.geofence_file = self.get_parameter('geofence_file').value
 
         self._done = False

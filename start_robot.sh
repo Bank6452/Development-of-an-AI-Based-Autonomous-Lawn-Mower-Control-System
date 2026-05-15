@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # --- Robot Master Startup Script ---
+source /opt/ros/humble/setup.bash
 
 if [ ! -d "src/robot_bridge" ]; then
     echo "Error: กรุณารันสคริปต์นี้จากโฟลเดอร์ ~/ros2_ws เท่านั้น"
@@ -47,12 +48,8 @@ sleep 16
 gnome-terminal --tab --title="3. NAVIGATION" -- bash -c "$SOURCE_CMD && ros2 launch robot_bridge navigation.launch.py; exec bash"
 sleep 8
 
-# 4. Terminal สำหรับ Geofence (Safety)
-gnome-terminal --tab --title="4. GEOFENCE" -- bash -c "$SOURCE_CMD && ros2 run robot_bridge geofence_enforcer --ros-args -p geofence_file:=/home/nhio/ros2_ws/lawn_geofence.yaml; exec bash"
-sleep 5
-
- #5. Terminal สำหรับ Planner
-gnome-terminal --tab --title="5. PLANNER" -- bash -c "$SOURCE_CMD && ros2 run robot_bridge lawn_planner --ros-args -p geofence_file:=/home/nhio/ros2_ws/lawn_geofence.yaml; exec bash"
+# 4. Terminal สำหรับ Geofence & Planner (Safety + Path Planning)
+gnome-terminal --tab --title="4. SAFETY & PLANNER" -- bash -c "$SOURCE_CMD && ros2 run robot_bridge geofence_and_planner --ros-args -p geofence_file:=${WS_DIR}/config/lawn_geofence.yaml; exec bash"
 sleep 5
 
  #6. Terminal สำหรับ Mowing Executor

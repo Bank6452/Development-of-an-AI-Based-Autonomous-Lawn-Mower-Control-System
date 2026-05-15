@@ -15,13 +15,15 @@ class LawnPlanner(Node):
         super().__init__('lawn_planner')
         
 
-        self.declare_parameter('geofence_file', '/home/nhio/ros2_ws/lawn_geofence.yaml')
-        self.declare_parameter('mower_width', 0.40)
-        self.declare_parameter('overlap', 0.05)
+        self.declare_parameter('geofence_file', '~/ros2_ws/lawn_geofence.yaml')
+        self.declare_parameter('mower_width', 0.60)
+        self.declare_parameter('overlap', 0.10)
+        self.declare_parameter('fence_offset', 0.0)  # 👈 ระยะห่างจากขอบรั้วถึงจุดกลางรถ
         
         self.geofence_file = self.get_parameter('geofence_file').get_parameter_value().string_value
         self.mower_width = self.get_parameter('mower_width').get_parameter_value().double_value
         self.overlap = self.get_parameter('overlap').get_parameter_value().double_value
+        self.fence_offset = self.get_parameter('fence_offset').get_parameter_value().double_value
         self.lane_spacing = self.mower_width - self.overlap
         
         self.path_pub = self.create_publisher(Path, '/mowing_path', 10)
@@ -66,8 +68,8 @@ class LawnPlanner(Node):
         if not polygon or polygon.is_empty:
             return []
 
-        # Buffer polygon inwards so the path doesn't touch or cross the geofence exterior
-        inner_poly = polygon.buffer(-self.mower_width / 2.0)
+        # Buffer polygon inwards: ใช้ fence_offset แทน mower_width/2
+        inner_poly = polygon.buffer(-self.fence_offset)
         if inner_poly.is_empty:
             self.get_logger().warn("❌ Geofence is too narrow for this mower width!")
             return []
@@ -99,23 +101,36 @@ class LawnPlanner(Node):
             intersection = rotated_poly.intersection(line)
             
             if not intersection.is_empty:
-                if intersection.geom_type == 'LineString':
-                    coords = list(intersection.coords)
-                    if reverse: coords.reverse()
-                    for pt in coords:
-                        path_points.append(pt)
-                elif intersection.geom_type == 'MultiLineString':
-                    # Handle polygons with holes or multiple segments
-                    lines = sorted(list(intersection.geoms), key=lambda l: l.bounds[0], reverse=reverse)
-                    for l in lines:
-                        coords = list(l.coords)
-                        if reverse: coords.reverse()
-                        for pt in coords:
-                            path_points.append(pt)
-                
+                self._add_intersection_to_path(intersection, path_points, reverse)
                 reverse = not reverse # Zig-Zag effect
                 
             current_y += self.lane_spacing
+
+        # ✅ [FIX] ตรวจสอบแถวสุดท้าย (Final Gap Fill)
+        # หากจุด current_y ล่าสุด ยังคลุมไม่ถึงขอบสนาม (max_y) ให้เพิ่มแถวสุดท้ายชิดขอบรั้ว
+        last_coverage_y = (current_y - self.lane_spacing) + (self.mower_width / 2.0)
+        if last_coverage_y < max_y:
+            final_y = max_y - (self.mower_width / 2.0)
+            line = LineString([(min_x - 1, final_y), (max_x + 1, final_y)])
+            intersection = rotated_poly.intersection(line)
+            if not intersection.is_empty:
+                self.get_logger().info(f"✨ Adding final safety row at Y={final_y:.2f} to cover the edge!")
+                self._add_intersection_to_path(intersection, path_points, reverse)
+
+    def _add_intersection_to_path(self, intersection, path_points, reverse):
+        if intersection.geom_type == 'LineString':
+            coords = list(intersection.coords)
+            if reverse: coords.reverse()
+            for pt in coords:
+                path_points.append(pt)
+        elif intersection.geom_type == 'MultiLineString':
+            # Handle polygons with holes or multiple segments
+            lines = sorted(list(intersection.geoms), key=lambda l: l.bounds[0], reverse=reverse)
+            for l in lines:
+                coords = list(l.coords)
+                if reverse: coords.reverse()
+                for pt in coords:
+                    path_points.append(pt)
             
         # 3. Rotate back to original frame
         final_points = []

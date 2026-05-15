@@ -130,6 +130,19 @@ Gazebo Odom (/odom_raw)             ──────┤→  EKF (ekf_sim.yaml)
 
 ## 4. Quick Start
 
+### First Time Setup
+
+Before running for the first time, install dependencies and build the workspace:
+
+```bash
+cd ~/ros2_ws
+chmod +x install_dependencies.sh
+./install_dependencies.sh
+
+source /opt/ros/humble/setup.bash
+colcon build --symlink-install
+```
+
 ### Simulation
 
 ```bash
@@ -146,7 +159,7 @@ This builds `robot_bridge`, launches Gazebo + Nav2, and opens RViz.
 ros2 run robot_bridge geofence_enforcer
 
 # 2. Start the zigzag path generator
-ros2 run robot_bridge lawn_planner --ros-args -p geofence_file:=/home/nhio/ros2_ws/lawn_geofence_sim.yaml
+ros2 run robot_bridge lawn_planner --ros-args -p geofence_file:=~/ros2_ws/lawn_geofence_sim.yaml
 
 # 3. Start the mowing executor (type 'go' to begin)
 ros2 run robot_bridge mow_zigzag

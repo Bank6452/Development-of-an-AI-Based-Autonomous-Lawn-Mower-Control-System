@@ -17,7 +17,8 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'model_path': 'yolo11n.pt',
-            'stop_distance': 2.0
+            'stop_distance': 3.0,
+            'fence_distance': 1.5
         }]
     )
 
@@ -45,8 +46,9 @@ def generate_launch_description():
             'initial_reset': 'true',
             'enable_color': 'true',
             'enable_depth': 'true',          # ✅ เปิด Depth เพื่อให้ AI วัดระยะได้
-            'rgb_camera.color_profile': '640x480x15', # ✅ บังคับ 15 FPS เพื่อลดความร้อน
-            'depth_module.profile': '640x480x15',     # ✅ บังคับ 15 FPS ให้เท่ากับภาพสี
+            'rgb_camera.profile': '640x480x15', # ✅ บังคับ 15 FPS เพื่อลดความร้อน
+            'depth_module.depth_profile': '640x480x15',     # ✅ บังคับ 15 FPS ให้เท่ากับภาพสี
+            'align_depth.enable': 'true',             # ✅ บังคับให้พิกเซลภาพสีกับภาพความลึกตรงกัน (สำคัญมาก!)
             'pointcloud.enable': 'false',
         }.items()
     )
@@ -106,8 +108,18 @@ def generate_launch_description():
         name='auto_datum_node',
         output='screen',
         parameters=[{
-            'geofence_file': '/home/nhio/ros2_ws/lawn_geofence.yaml'
+            'geofence_file': os.path.join(os.path.expanduser('~'), 'ros2_ws', 'lawn_geofence.yaml')
         }]
+    )
+
+    # 9. Twist Mux Node (จัดการลำดับความสำคัญของ cmd_vel)
+    twist_mux_node = Node(
+        package='twist_mux',
+        executable='twist_mux',
+        name='twist_mux',
+        output='screen',
+        parameters=[os.path.join(get_package_share_directory('robot_bridge'), 'config', 'twist_mux.yaml')],
+        remappings=[('/cmd_vel_out', '/cmd_vel')] # ส่งออกที่ /cmd_vel เพื่อให้ STM32 รับไป
     )
 
     return LaunchDescription([
@@ -119,4 +131,5 @@ def generate_launch_description():
         ultrasonic_converter_node,
         rplidar_node,
         auto_datum_node,   # ✅ ตั้งค่า Datum อัตโนมัติจากไฟล์รั้ว
+        twist_mux_node     # ✅ เพิ่มกรรมการตัดสิน (Mux)
     ])

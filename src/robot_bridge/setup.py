@@ -38,6 +38,8 @@ setup(
             'robot_dashboard = robot_bridge.robot_dashboard:main',
             'vision_node = robot_bridge.vision_node:main',
             'auto_datum_node = robot_bridge.auto_datum_node:main',
+            'geofence_and_planner = robot_bridge.geofence_and_planner:main',
+            'straight_line_test = robot_bridge.straight_line_test:main',
         ],
     },
 )
