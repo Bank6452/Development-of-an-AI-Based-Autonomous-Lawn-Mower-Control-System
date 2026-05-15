@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🚜 Autonomous Lawn Mower Robot — ROS 2 & STM32
 
 <div align="center">
@@ -304,3 +305,6 @@ python3 scripts/calibrate_robot.py angular 90    # การหมุน
 โปรเจคนี้จัดทำเพื่อการศึกษาเท่านั้น (Academic Use Only)
 
 © 2026 Autonomous Mower Project — All Rights Reserved
+=======
+# Development-of-an-AI-Based-Autonomous-Lawn-Mower-Control-System
+>>>>>>> 4ffaafc478d32b4dd0e119efef958e8665617bdb
