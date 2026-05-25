@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>/ — graphify tree viewer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      margin: 20px 0 0 24px;
+      font-size: 2.2rem;
+      font-weight: bold;
+      color: #1e3a56;
+    }
+    .controls {
+      margin: 20px 0 15px 24px;
+    }
+    button {
+      margin-right: 10px;
+      padding: 8px 18px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s ease-in-out;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:active {
+      background: #004085;
+    }
+    #tree-container {
+      width: calc(100vw - 48px); /* Adjust for body margin/padding */
+      height: 85vh;
+      overflow: auto;
+      border-radius: 8px;
+      background: #fff;
+      margin-left: 24px;
+      margin-right: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      border: 1px solid #ddd;
+    }
+    svg {
+      background: #fff;
+      border-radius: 8px;
+      display: block; /* Important for D3 */
+    }
+    .node circle {
+      stroke-width: 2.5px;
+    }
+    .node text { /* Base style for the <text> container */
+      font: 13px 'Segoe UI', sans-serif;
+      paint-order: stroke fill; /* Ensures text is readable over lines */
+      stroke: #fff; /* White halo */
+      stroke-width: 3px; /* Halo thickness */
+      stroke-linejoin: round;
+      stroke-opacity: 0.85; /* Halo opacity */
+    }
+    .link {
+      fill: none;
+      stroke-opacity: 0.7;
+      stroke-width: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>/ — Knowledge Graph</h1>
+  <div class="controls">
+    <button onclick="expandAll()">Expand All</button>
+    <button onclick="collapseAll()">Collapse All</button>
+    <button onclick="resetView()">Reset View</button>
+  </div>
+  <div id="tree-container">
+    <svg id="tree-svg" width="6000" height="8000"></svg>
+  </div>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    const initialJsonData = {"name":"/","total_count":657,"children":[{"name":"calibrate_linear.py","total_count":5,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".loop()","total_count":1,"children":[]},{"name":".odom_callback()","total_count":1,"children":[]},{"name":"LinearCalibrator","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]}]},{"name":"calibrate_robot.py","total_count":6,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".loop()","total_count":1,"children":[]},{"name":".odom_callback()","total_count":1,"children":[]},{"name":"print_usage()","total_count":1,"children":[]},{"name":"quaternion_to_euler()","total_count":1,"children":[]},{"name":"UniversalCalibrator","total_count":1,"children":[]}]},{"name":"esp32_bno055_pio","total_count":9,"children":[{"name":"src","total_count":9,"children":[{"name":"main.cpp","total_count":2,"children":[{"name":"loop()","total_count":1,"children":[]},{"name":"setup()","total_count":1,"children":[]}]},{"name":"power_monitor.cpp","total_count":2,"children":[{"name":"initPowerMonitor()","total_count":1,"children":[]},{"name":"readPowerData()","total_count":1,"children":[]}]},{"name":"ultrasonic.cpp","total_count":3,"children":[{"name":"getSingleDistance()","total_count":1,"children":[]},{"name":"initUltrasonic()","total_count":1,"children":[]},{"name":"readUltrasonic()","total_count":1,"children":[]}]},{"name":"power_monitor.h","total_count":1,"children":[]},{"name":"ultrasonic.h","total_count":1,"children":[]}]}]},{"name":"extracted_project","total_count":46,"children":[{"name":"Final_project","total_count":46,"children":[{"name":"ai","total_count":5,"children":[{"name":"yolo_depth_node.py","total_count":4,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".callback()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"YoloDepthNode","total_count":1,"children":[]}]},{"name":"test_yolo_depth.py","total_count":1,"children":[]}]},{"name":"Final_Project_Main","total_count":41,"children":[{"name":"include","total_count":7,"children":[{"name":"battery_monitor.h","total_count":1,"children":[]},{"name":"Encoder.h","total_count":1,"children":[]},{"name":"engine_control.h","total_count":1,"children":[]},{"name":"imu_control.h","total_count":1,"children":[]},{"name":"motor_control.h","total_count":1,"children":[]},{"name":"mpu_test.h","total_count":1,"children":[]},{"name":"Ultrasonic.h","total_count":1,"children":[]}]},{"name":"python_test","total_count":9,"children":[{"name":"main_control.py","total_count":9,"children":[{"name":"find_stm32_port()","total_count":1,"children":[]},{"name":"parse_incoming_data()","total_count":1,"children":[]},{"name":"send_control_command()","total_count":1,"children":[]},{"name":"send_emergency()","total_count":1,"children":[]},{"name":"verify_imu_checksum()","total_count":1,"children":[]},{"name":"ตรวจสอบ Checksum ข้อมูล IMU ที่ส่งมาจาก STM32","total_count":1,"children":[]},{"name":"ส่งคำสั่งคุมทิศทาง (C) ตามโปรโตคอลใหม่: C,Dir,Speed,Chk     direction: 'F', 'B'","total_count":1,"children":[]},{"name":"ส่งคำสั่งหยุดฉุกเฉิน (E): E,state,chk","total_count":1,"children":[]},{"name":"แยกแยะข้อมูล I (IMU) และ D (Encoder)","total_count":1,"children":[]}]}]},{"name":"src","total_count":25,"children":[{"name":"battery_monitor.cpp","total_count":2,"children":[{"name":"initBattery()","total_count":1,"children":[]},{"name":"updateBattery()","total_count":1,"children":[]}]},{"name":"Encoder.cpp","total_count":4,"children":[{"name":"getEncoderData()","total_count":1,"children":[]},{"name":"handleEncoderL()","total_count":1,"children":[]},{"name":"handleEncoderR()","total_count":1,"children":[]},{"name":"setupEncoders()","total_count":1,"children":[]}]},{"name":"engine_control.cpp","total_count":6,"children":[{"name":"initEngineSystem()","total_count":1,"children":[]},{"name":"powerOff()","total_count":1,"children":[]},{"name":"powerOn()","total_count":1,"children":[]},{"name":"setThrottle()","total_count":1,"children":[]},{"name":"startEngine()","total_count":1,"children":[]},{"name":"updateStarterStatus()","total_count":1,"children":[]}]},{"name":"imu_control.cpp","total_count":3,"children":[{"name":"displayCalibrationData()","total_count":1,"children":[]},{"name":"initIMU()","total_count":1,"children":[]},{"name":"updateIMU()","total_count":1,"children":[]}]},{"name":"main.cpp","total_count":1,"children":[{"name":"processCommand()","total_count":1,"children":[]}]},{"name":"motor_control.cpp","total_count":5,"children":[{"name":"driveMotors()","total_count":1,"children":[]},{"name":"initMotors()","total_count":1,"children":[]},{"name":"msToPWM()","total_count":1,"children":[]},{"name":"stop()","total_count":1,"children":[]},{"name":"stopMotors()","total_count":1,"children":[]}]},{"name":"mpu_test.cpp","total_count":2,"children":[{"name":"initMPU()","total_count":1,"children":[]},{"name":"readMPU()","total_count":1,"children":[]}]},{"name":"Ultrasonic.cpp","total_count":2,"children":[{"name":"getDistance()","total_count":1,"children":[]},{"name":"setupUltrasonic()","total_count":1,"children":[]}]}]}]}]}]},{"name":"geofence_enforcer.py","total_count":11,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".gps_callback()","total_count":1,"children":[]},{"name":".gps_to_enu()","total_count":1,"children":[]},{"name":".init_enforce_mode()","total_count":1,"children":[]},{"name":".load_geofence()","total_count":1,"children":[]},{"name":".publish_marker_enforce()","total_count":1,"children":[]},{"name":".publish_marker_record()","total_count":1,"children":[]},{"name":".record_point()","total_count":1,"children":[]},{"name":".save_geofence()","total_count":1,"children":[]},{"name":"GeofenceSystem","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]}]},{"name":"install","total_count":50,"children":[{"name":"_local_setup_util_ps1.py","total_count":18,"children":[{"name":"_append_unique_value()","total_count":1,"children":[]},{"name":"_include_comments()","total_count":1,"children":[]},{"name":"_prepend_unique_value()","total_count":1,"children":[]},{"name":"_remove_ending_separators()","total_count":1,"children":[]},{"name":"_set()","total_count":1,"children":[]},{"name":"_set_if_unset()","total_count":1,"children":[]},{"name":"add_package_runtime_dependencies()","total_count":1,"children":[]},{"name":"Check the path and if it exists extract the packages runtime dependencies.","total_count":1,"children":[]},{"name":"Find packages based on colcon-specific files created during installation.      :","total_count":1,"children":[]},{"name":"get_commands()","total_count":1,"children":[]},{"name":"get_packages()","total_count":1,"children":[]},{"name":"handle_dsv_types_except_source()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"Order packages topologically.      :param dict packages: A mapping from package","total_count":1,"children":[]},{"name":"order_packages()","total_count":1,"children":[]},{"name":"process_dsv_file()","total_count":1,"children":[]},{"name":"Reduce the set of packages to the ones part of the circular dependency.      :pa","total_count":1,"children":[]},{"name":"reduce_cycle_set()","total_count":1,"children":[]}]},{"name":"_local_setup_util_sh.py","total_count":18,"children":[{"name":"_append_unique_value()","total_count":1,"children":[]},{"name":"_include_comments()","total_count":1,"children":[]},{"name":"_prepend_unique_value()","total_count":1,"children":[]},{"name":"_remove_ending_separators()","total_count":1,"children":[]},{"name":"_set()","total_count":1,"children":[]},{"name":"_set_if_unset()","total_count":1,"children":[]},{"name":"add_package_runtime_dependencies()","total_count":1,"children":[]},{"name":"Check the path and if it exists extract the packages runtime dependencies.","total_count":1,"children":[]},{"name":"Find packages based on colcon-specific files created during installation.      :","total_count":1,"children":[]},{"name":"get_commands()","total_count":1,"children":[]},{"name":"get_packages()","total_count":1,"children":[]},{"name":"handle_dsv_types_except_source()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"Order packages topologically.      :param dict packages: A mapping from package","total_count":1,"children":[]},{"name":"order_packages()","total_count":1,"children":[]},{"name":"process_dsv_file()","total_count":1,"children":[]},{"name":"Reduce the set of packages to the ones part of the circular dependency.      :pa","total_count":1,"children":[]},{"name":"reduce_cycle_set()","total_count":1,"children":[]}]},{"name":"local_setup.ps1","total_count":1,"children":[{"name":"_colcon_prefix_powershell_source_script()","total_count":1,"children":[]}]},{"name":"mower_bot_description","total_count":3,"children":[{"name":"share","total_count":3,"children":[{"name":"mower_bot_description","total_count":3,"children":[{"name":"package.ps1","total_count":3,"children":[{"name":"colcon_append_unique_value()","total_count":1,"children":[]},{"name":"colcon_package_source_powershell_script()","total_count":1,"children":[]},{"name":"colcon_prepend_unique_value()","total_count":1,"children":[]}]}]}]}]},{"name":"robot_bridge","total_count":5,"children":[{"name":"share","total_count":5,"children":[{"name":"robot_bridge","total_count":5,"children":[{"name":"hook","total_count":2,"children":[{"name":"ament_prefix_path.ps1","total_count":1,"children":[]},{"name":"pythonpath.ps1","total_count":1,"children":[]}]},{"name":"package.ps1","total_count":3,"children":[{"name":"colcon_append_unique_value()","total_count":1,"children":[]},{"name":"colcon_package_source_powershell_script()","total_count":1,"children":[]},{"name":"colcon_prepend_unique_value()","total_count":1,"children":[]}]}]}]}]},{"name":"rplidar_ros","total_count":4,"children":[{"name":"share","total_count":4,"children":[{"name":"rplidar_ros","total_count":4,"children":[{"name":"hook","total_count":1,"children":[{"name":"cmake_prefix_path.ps1","total_count":1,"children":[]}]},{"name":"package.ps1","total_count":3,"children":[{"name":"colcon_append_unique_value()","total_count":1,"children":[]},{"name":"colcon_package_source_powershell_script()","total_count":1,"children":[]},{"name":"colcon_prepend_unique_value()","total_count":1,"children":[]}]}]}]}]},{"name":"setup.ps1","total_count":1,"children":[{"name":"_colcon_prefix_chain_powershell_source_script()","total_count":1,"children":[]}]}]},{"name":"lawn_planner.py","total_count":6,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".generate_coverage_path()","total_count":1,"children":[]},{"name":".load_geofence()","total_count":1,"children":[]},{"name":".plan_and_publish()","total_count":1,"children":[]},{"name":"LawnPlanner","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]}]},{"name":"monitor_imu_robot.py","total_count":5,"children":[{"name":"# NOTE: Using a slightly different mapping to match user's \"Pitch is Yaw\" observ","total_count":1,"children":[]},{"name":".__init__()","total_count":1,"children":[]},{"name":".callback()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"RobotIMUMonitor","total_count":1,"children":[]}]},{"name":"src","total_count":492,"children":[{"name":"mower_bot_description","total_count":4,"children":[{"name":"install","total_count":3,"children":[{"name":"mower_bot_description","total_count":2,"children":[{"name":"share","total_count":2,"children":[{"name":"mower_bot_description","total_count":2,"children":[{"name":"launch","total_count":1,"children":[{"name":"launch_sim.launch.py","total_count":1,"children":[]}]},{"name":"package.ps1","total_count":1,"children":[]}]}]}]},{"name":"setup.ps1","total_count":1,"children":[]}]},{"name":"launch","total_count":1,"children":[{"name":"launch_sim.launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]}]}]},{"name":"robot_bridge","total_count":121,"children":[{"name":"launch","total_count":5,"children":[{"name":"hardware_bringup.launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"imu_test.launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"localization.launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"navigation.launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"simulation.launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]}]},{"name":"maps","total_count":1,"children":[{"name":"gen_map.py","total_count":1,"children":[]}]},{"name":"robot_bridge","total_count":114,"children":[{"name":"arduino_reader.py","total_count":6,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".create_range_msg()","total_count":1,"children":[]},{"name":".process_line()","total_count":1,"children":[]},{"name":".read_serial_data()","total_count":1,"children":[]},{"name":"ArduinoReaderNode","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]}]},{"name":"geofence_enforcer.py","total_count":14,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".gps_callback()","total_count":1,"children":[]},{"name":".gps_to_enu()","total_count":1,"children":[]},{"name":".init_enforce_mode()","total_count":1,"children":[]},{"name":".load_geofence()","total_count":1,"children":[]},{"name":".nav_callback()","total_count":1,"children":[]},{"name":".process_and_publish()","total_count":1,"children":[]},{"name":".publish_marker_enforce()","total_count":1,"children":[]},{"name":".publish_marker_record()","total_count":1,"children":[]},{"name":".record_point()","total_count":1,"children":[]},{"name":".save_geofence()","total_count":1,"children":[]},{"name":".teleop_callback()","total_count":1,"children":[]},{"name":"GeofenceSystem","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]}]},{"name":"lawn_planner.py","total_count":6,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".generate_coverage_path()","total_count":1,"children":[]},{"name":".load_geofence()","total_count":1,"children":[]},{"name":".plan_and_publish()","total_count":1,"children":[]},{"name":"LawnPlanner","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]}]},{"name":"mow_zigzag.py","total_count":12,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".build_path_with_connection()","total_count":1,"children":[]},{"name":".follow_path_callback()","total_count":1,"children":[]},{"name":".get_robot_pose()","total_count":1,"children":[]},{"name":".path_callback()","total_count":1,"children":[]},{"name":".send_chunk()","total_count":1,"children":[]},{"name":".split_into_chunks()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"MowZigzag","total_count":1,"children":[]},{"name":"สร้าง Path จาก from_pose (ตำแหน่งหุ่นปัจจุบัน) ไปยัง chunk         เหมือนกับที่","total_count":1,"children":[]},{"name":"ส่ง Path ก้อนเดียวให้ Nav2 และรอให้เสร็จ","total_count":1,"children":[]},{"name":"แบ่ง poses ออกเป็นก้อนๆ โดยหั่น \"ก่อน\" จุดเลี้ยว         เพื่อให้:         - แต่","total_count":1,"children":[]}]},{"name":"ntrip_client.py","total_count":15,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".connect_ntrip()","total_count":1,"children":[]},{"name":".connection_monitor_loop()","total_count":1,"children":[]},{"name":".destroy_node()","total_count":1,"children":[]},{"name":".find_gps_port()","total_count":1,"children":[]},{"name":".nmea_callback()","total_count":1,"children":[]},{"name":".ntrip_read_loop()","total_count":1,"children":[]},{"name":".serial_read_loop()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"NtripClient","total_count":1,"children":[]},{"name":"ค้นหาพอร์ตที่มีชิป FTDI (VID:0403, PID:6001)","total_count":1,"children":[]},{"name":"รับ NMEA (GGA) เพื่อส่งกลับไปให้เซิร์ฟเวอร์ VRS","total_count":1,"children":[]},{"name":"วนลูปตรวจสอบและพยายามเชื่อมต่อพอร์ต USB อัตโนมัติ","total_count":1,"children":[]},{"name":"อ่านข้อมูล NMEA ดิบทจากบอร์ด GPS แล้ว Publish ลง Topic","total_count":1,"children":[]},{"name":"อ่านข้อมูล RTCM จากเซิร์ฟเวอร์และเขียนลงบอร์ด GPS","total_count":1,"children":[]}]},{"name":"robot_dashboard.py","total_count":15,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".battery_callback()","total_count":1,"children":[]},{"name":".cal_callback()","total_count":1,"children":[]},{"name":".camera_callback()","total_count":1,"children":[]},{"name":".compass_callback()","total_count":1,"children":[]},{"name":".draw_dashboard()","total_count":1,"children":[]},{"name":".get_status_str()","total_count":1,"children":[]},{"name":".gps_callback()","total_count":1,"children":[]},{"name":".imu_callback()","total_count":1,"children":[]},{"name":".lidar_callback()","total_count":1,"children":[]},{"name":".odom_callback()","total_count":1,"children":[]},{"name":".vision_emergency_callback()","total_count":1,"children":[]},{"name":".vision_perf_callback()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"RobotDashboard","total_count":1,"children":[]}]},{"name":"teleop_stm.py","total_count":30,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".cmd_vel_callback()","total_count":1,"children":[]},{"name":".connection_monitor_loop()","total_count":1,"children":[]},{"name":".ekf_callback()","total_count":1,"children":[]},{"name":".emergency_callback()","total_count":1,"children":[]},{"name":".find_stm32_port()","total_count":1,"children":[]},{"name":".heartbeat_loop()","total_count":1,"children":[]},{"name":".lidar_callback()","total_count":1,"children":[]},{"name":".load_offset()","total_count":1,"children":[]},{"name":".process_imu_data()","total_count":1,"children":[]},{"name":".process_stm32_data()","total_count":1,"children":[]},{"name":".publish_safety_marker()","total_count":1,"children":[]},{"name":".read_serial_data()","total_count":1,"children":[]},{"name":".save_offset()","total_count":1,"children":[]},{"name":".send_control_cmd()","total_count":1,"children":[]},{"name":".send_serial()","total_count":1,"children":[]},{"name":".set_north_callback()","total_count":1,"children":[]},{"name":".ultra_raw_callback()","total_count":1,"children":[]},{"name":".vision_emergency_callback()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"TeleopSTMNode","total_count":1,"children":[]},{"name":"คำสั่งตั้งค่าหน้าหุ่นให้เป็นทิศเหนือ (0 องศา)","total_count":1,"children":[]},{"name":"ค้นหาพอร์ตอัตโนมัติ (ลองหา CH340 ก่อน ถ้าไม่เจอเอาพอร์ตที่ว่างอยู่)","total_count":1,"children":[]},{"name":"บันทึกค่า Offset ลงไฟล์","total_count":1,"children":[]},{"name":"รับสัญญาณหยุดฉุกเฉินจาก AI Vision","total_count":1,"children":[]},{"name":"วนลูปตรวจสอบและพยายามเชื่อมต่อพอร์ต USB อัตโนมัติ","total_count":1,"children":[]},{"name":"วาดพัดสีแดง/เขียว ใน RViz เพื่อโชว์ระยะปลอดภัยของ LiDAR","total_count":1,"children":[]},{"name":"วิเคราะห์ข้อมูลจาก LiDAR เพื่อตรวจจับสิ่งกีดขวางด้านหน้า","total_count":1,"children":[]},{"name":"เก็บค่าพิกัดล่าสุดที่ EKF คำนวณเสร็จแล้ว","total_count":1,"children":[]},{"name":"โหลดค่า Offset จากไฟล์ ถ้าไม่มีให้ใช้ค่า Default (160.0)","total_count":1,"children":[]}]},{"name":"ultrasonic_converter.py","total_count":10,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".center_cb()","total_count":1,"children":[]},{"name":".create_points_for_sensor()","total_count":1,"children":[]},{"name":".filter_dist()","total_count":1,"children":[]},{"name":".left_cb()","total_count":1,"children":[]},{"name":".publish_cloud()","total_count":1,"children":[]},{"name":".right_cb()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"Temporal Hold Filter (Tuned for JSN-SR04T)         If the sensor goes blind (-1","total_count":1,"children":[]},{"name":"UltrasonicToPointCloud","total_count":1,"children":[]}]},{"name":"vision_node.py","total_count":5,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".color_callback()","total_count":1,"children":[]},{"name":".depth_callback()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"VisionNode","total_count":1,"children":[]}]},{"name":"__init__.py","total_count":1,"children":[]}]},{"name":"setup.py","total_count":1,"children":[]}]},{"name":"rplidar_ros","total_count":367,"children":[{"name":"include","total_count":4,"children":[{"name":"rplidar_node.hpp","total_count":3,"children":[{"name":"deg_2_rad()","total_count":1,"children":[]},{"name":"getAngle()","total_count":1,"children":[]},{"name":"Node()","total_count":1,"children":[]}]},{"name":"visibility.h","total_count":1,"children":[]}]},{"name":"launch","total_count":24,"children":[{"name":"rplidar_a1_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"rplidar_a2m12_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"rplidar_a2m7_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"rplidar_a2m8_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"rplidar_a3_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"rplidar_c1_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"rplidar_s1_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"rplidar_s1_tcp_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"rplidar_s2_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"rplidar_s2e_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"rplidar_s3_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"rplidar_t1_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"view_rplidar_a1_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"view_rplidar_a2m7_launch.py","total_count":2,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]},{"name":"view_rplidar_a2m12_launch.py","total_count":1,"children":[]}]},{"name":"view_rplidar_a2m8_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"view_rplidar_a3_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"view_rplidar_c1_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"view_rplidar_s1_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"view_rplidar_s1_tcp_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"view_rplidar_s2_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"view_rplidar_s2e_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"view_rplidar_s3_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]},{"name":"view_rplidar_t1_launch.py","total_count":1,"children":[{"name":"generate_launch_description()","total_count":1,"children":[]}]}]},{"name":"sdk","total_count":333,"children":[{"name":"include","total_count":13,"children":[{"name":"rplidar_driver.h","total_count":1,"children":[{"name":"rp()","total_count":1,"children":[]}]},{"name":"sl_crc.h","total_count":1,"children":[{"name":"sl()","total_count":1,"children":[]}]},{"name":"sl_lidar_driver.h","total_count":2,"children":[{"name":"ILidarDriver()","total_count":1,"children":[]},{"name":"ISerialPortChannel()","total_count":1,"children":[]}]},{"name":"sl_lidar_driver_impl.h","total_count":1,"children":[{"name":"sl()","total_count":1,"children":[]}]},{"name":"rplidar.h","total_count":1,"children":[]},{"name":"rplidar_cmd.h","total_count":1,"children":[]},{"name":"rplidar_protocol.h","total_count":1,"children":[]},{"name":"rptypes.h","total_count":1,"children":[]},{"name":"sl_lidar.h","total_count":1,"children":[]},{"name":"sl_lidar_cmd.h","total_count":1,"children":[]},{"name":"sl_lidar_protocol.h","total_count":1,"children":[]},{"name":"sl_types.h","total_count":1,"children":[]}]},{"name":"src","total_count":320,"children":[{"name":"arch","total_count":189,"children":[{"name":"linux","total_count":67,"children":[{"name":"net_serial.cpp","total_count":18,"children":[{"name":"_init()","total_count":1,"children":[]},{"name":"bind()","total_count":1,"children":[]},{"name":"cancelOperation()","total_count":1,"children":[]},{"name":"clearDTR()","total_count":1,"children":[]},{"name":"close()","total_count":1,"children":[]},{"name":"CreateRxTx()","total_count":1,"children":[]},{"name":"flush()","total_count":1,"children":[]},{"name":"getTermBaudBitmap()","total_count":1,"children":[]},{"name":"open()","total_count":1,"children":[]},{"name":"raw_serial()","total_count":1,"children":[]},{"name":"recvdata()","total_count":1,"children":[]},{"name":"ReleaseRxTx()","total_count":1,"children":[]},{"name":"rxqueue_count()","total_count":1,"children":[]},{"name":"senddata()","total_count":1,"children":[]},{"name":"setDTR()","total_count":1,"children":[]},{"name":"waitfordata()","total_count":1,"children":[]},{"name":"waitforrecv()","total_count":1,"children":[]},{"name":"waitforsent()","total_count":1,"children":[]}]},{"name":"net_serial.h","total_count":1,"children":[{"name":"rp()","total_count":1,"children":[]}]},{"name":"net_socket.cpp","total_count":38,"children":[{"name":"_halAddrTypeToOSType()","total_count":1,"children":[]},{"name":"_socketHalFamilyToOSFamily()","total_count":1,"children":[]},{"name":"accept()","total_count":1,"children":[]},{"name":"bind()","total_count":1,"children":[]},{"name":"clearRxCache()","total_count":1,"children":[]},{"name":"connect()","total_count":1,"children":[]},{"name":"CreateSocket()","total_count":1,"children":[]},{"name":"DGramSocketImpl()","total_count":1,"children":[]},{"name":"dispose()","total_count":1,"children":[]},{"name":"enableKeepAlive()","total_count":1,"children":[]},{"name":"enableNoDelay()","total_count":1,"children":[]},{"name":"getAddressAsString()","total_count":1,"children":[]},{"name":"getAddressType()","total_count":1,"children":[]},{"name":"getLocalAddress()","total_count":1,"children":[]},{"name":"getPeerAddress()","total_count":1,"children":[]},{"name":"getPort()","total_count":1,"children":[]},{"name":"getRawAddress()","total_count":1,"children":[]},{"name":"listen()","total_count":1,"children":[]},{"name":"LoopUpHostName()","total_count":1,"children":[]},{"name":"recv()","total_count":1,"children":[]},{"name":"recvFrom()","total_count":1,"children":[]},{"name":"recvFromNoWait()","total_count":1,"children":[]},{"name":"recvNoWait()","total_count":1,"children":[]},{"name":"send()","total_count":1,"children":[]},{"name":"sendTo()","total_count":1,"children":[]},{"name":"setAddressFromString()","total_count":1,"children":[]},{"name":"setAnyAddress()","total_count":1,"children":[]},{"name":"setBroadcastAddressIPv4()","total_count":1,"children":[]},{"name":"setLoopbackAddress()","total_count":1,"children":[]},{"name":"setPairAddress()","total_count":1,"children":[]},{"name":"setPort()","total_count":1,"children":[]},{"name":"setTimeout()","total_count":1,"children":[]},{"name":"shutdown()","total_count":1,"children":[]},{"name":"SocketAddress()","total_count":1,"children":[]},{"name":"StreamSocketImpl()","total_count":1,"children":[]},{"name":"waitforData()","total_count":1,"children":[]},{"name":"waitforIncomingConnection()","total_count":1,"children":[]},{"name":"waitforSent()","total_count":1,"children":[]}]},{"name":"thread.hpp","total_count":5,"children":[{"name":"create()","total_count":1,"children":[]},{"name":"getPriority()","total_count":1,"children":[]},{"name":"join()","total_count":1,"children":[]},{"name":"SetSelfPriority()","total_count":1,"children":[]},{"name":"terminate()","total_count":1,"children":[]}]},{"name":"timer.cpp","total_count":2,"children":[{"name":"rp_getms()","total_count":1,"children":[]},{"name":"rp_getus()","total_count":1,"children":[]}]},{"name":"timer.h","total_count":2,"children":[{"name":"delay()","total_count":1,"children":[]},{"name":"rp()","total_count":1,"children":[]}]},{"name":"arch_linux.h","total_count":1,"children":[]}]},{"name":"macOS","total_count":66,"children":[{"name":"net_serial.cpp","total_count":17,"children":[{"name":"_init()","total_count":1,"children":[]},{"name":"bind()","total_count":1,"children":[]},{"name":"clearDTR()","total_count":1,"children":[]},{"name":"close()","total_count":1,"children":[]},{"name":"CreateRxTx()","total_count":1,"children":[]},{"name":"flush()","total_count":1,"children":[]},{"name":"getTermBaudBitmap()","total_count":1,"children":[]},{"name":"open()","total_count":1,"children":[]},{"name":"raw_serial()","total_count":1,"children":[]},{"name":"recvdata()","total_count":1,"children":[]},{"name":"ReleaseRxTx()","total_count":1,"children":[]},{"name":"rxqueue_count()","total_count":1,"children":[]},{"name":"senddata()","total_count":1,"children":[]},{"name":"setDTR()","total_count":1,"children":[]},{"name":"waitfordata()","total_count":1,"children":[]},{"name":"waitforrecv()","total_count":1,"children":[]},{"name":"waitforsent()","total_count":1,"children":[]}]},{"name":"net_serial.h","total_count":1,"children":[{"name":"rp()","total_count":1,"children":[]}]},{"name":"net_socket.cpp","total_count":38,"children":[{"name":"_halAddrTypeToOSType()","total_count":1,"children":[]},{"name":"_socketHalFamilyToOSFamily()","total_count":1,"children":[]},{"name":"accept()","total_count":1,"children":[]},{"name":"bind()","total_count":1,"children":[]},{"name":"clearRxCache()","total_count":1,"children":[]},{"name":"connect()","total_count":1,"children":[]},{"name":"CreateSocket()","total_count":1,"children":[]},{"name":"DGramSocketImpl()","total_count":1,"children":[]},{"name":"dispose()","total_count":1,"children":[]},{"name":"enableKeepAlive()","total_count":1,"children":[]},{"name":"enableNoDelay()","total_count":1,"children":[]},{"name":"getAddressAsString()","total_count":1,"children":[]},{"name":"getAddressType()","total_count":1,"children":[]},{"name":"getLocalAddress()","total_count":1,"children":[]},{"name":"getPeerAddress()","total_count":1,"children":[]},{"name":"getPort()","total_count":1,"children":[]},{"name":"getRawAddress()","total_count":1,"children":[]},{"name":"listen()","total_count":1,"children":[]},{"name":"LoopUpHostName()","total_count":1,"children":[]},{"name":"recv()","total_count":1,"children":[]},{"name":"recvFrom()","total_count":1,"children":[]},{"name":"recvFromNoWait()","total_count":1,"children":[]},{"name":"recvNoWait()","total_count":1,"children":[]},{"name":"send()","total_count":1,"children":[]},{"name":"sendTo()","total_count":1,"children":[]},{"name":"setAddressFromString()","total_count":1,"children":[]},{"name":"setAnyAddress()","total_count":1,"children":[]},{"name":"setBroadcastAddressIPv4()","total_count":1,"children":[]},{"name":"setLoopbackAddress()","total_count":1,"children":[]},{"name":"setPairAddress()","total_count":1,"children":[]},{"name":"setPort()","total_count":1,"children":[]},{"name":"setTimeout()","total_count":1,"children":[]},{"name":"shutdown()","total_count":1,"children":[]},{"name":"SocketAddress()","total_count":1,"children":[]},{"name":"StreamSocketImpl()","total_count":1,"children":[]},{"name":"waitforData()","total_count":1,"children":[]},{"name":"waitforIncomingConnection()","total_count":1,"children":[]},{"name":"waitforSent()","total_count":1,"children":[]}]},{"name":"thread.hpp","total_count":5,"children":[{"name":"create()","total_count":1,"children":[]},{"name":"getPriority()","total_count":1,"children":[]},{"name":"join()","total_count":1,"children":[]},{"name":"SetSelfPriority()","total_count":1,"children":[]},{"name":"terminate()","total_count":1,"children":[]}]},{"name":"timer.cpp","total_count":2,"children":[{"name":"rp_getms()","total_count":1,"children":[]},{"name":"rp_getus()","total_count":1,"children":[]}]},{"name":"timer.h","total_count":2,"children":[{"name":"delay()","total_count":1,"children":[]},{"name":"rp()","total_count":1,"children":[]}]},{"name":"arch_macOS.h","total_count":1,"children":[]}]},{"name":"win32","total_count":56,"children":[{"name":"net_serial.cpp","total_count":5,"children":[{"name":"bind()","total_count":1,"children":[]},{"name":"CreateRxTx()","total_count":1,"children":[]},{"name":"open()","total_count":1,"children":[]},{"name":"raw_serial()","total_count":1,"children":[]},{"name":"ReleaseRxTx()","total_count":1,"children":[]}]},{"name":"net_serial.h","total_count":1,"children":[{"name":"rp()","total_count":1,"children":[]}]},{"name":"net_socket.cpp","total_count":39,"children":[{"name":"_checkWSAStartup()","total_count":1,"children":[]},{"name":"_halAddrTypeToOSType()","total_count":1,"children":[]},{"name":"_inet_ntop()","total_count":1,"children":[]},{"name":"_inet_pton()","total_count":1,"children":[]},{"name":"_socketHalFamilyToOSFamily()","total_count":1,"children":[]},{"name":"accept()","total_count":1,"children":[]},{"name":"bind()","total_count":1,"children":[]},{"name":"clearRxCache()","total_count":1,"children":[]},{"name":"connect()","total_count":1,"children":[]},{"name":"CreateSocket()","total_count":1,"children":[]},{"name":"DGramSocketImpl()","total_count":1,"children":[]},{"name":"dispose()","total_count":1,"children":[]},{"name":"enableKeepAlive()","total_count":1,"children":[]},{"name":"enableNoDelay()","total_count":1,"children":[]},{"name":"getAddressAsString()","total_count":1,"children":[]},{"name":"getAddressType()","total_count":1,"children":[]},{"name":"getLocalAddress()","total_count":1,"children":[]},{"name":"getPeerAddress()","total_count":1,"children":[]},{"name":"getPort()","total_count":1,"children":[]},{"name":"getRawAddress()","total_count":1,"children":[]},{"name":"listen()","total_count":1,"children":[]},{"name":"LoopUpHostName()","total_count":1,"children":[]},{"name":"recv()","total_count":1,"children":[]},{"name":"recvFrom()","total_count":1,"children":[]},{"name":"send()","total_count":1,"children":[]},{"name":"sendTo()","total_count":1,"children":[]},{"name":"setAddressFromString()","total_count":1,"children":[]},{"name":"setAnyAddress()","total_count":1,"children":[]},{"name":"setBroadcastAddressIPv4()","total_count":1,"children":[]},{"name":"setLoopbackAddress()","total_count":1,"children":[]},{"name":"setPairAddress()","total_count":1,"children":[]},{"name":"setPort()","total_count":1,"children":[]},{"name":"setTimeout()","total_count":1,"children":[]},{"name":"shutdown()","total_count":1,"children":[]},{"name":"SocketAddress()","total_count":1,"children":[]},{"name":"StreamSocketImpl()","total_count":1,"children":[]},{"name":"waitforData()","total_count":1,"children":[]},{"name":"waitforIncomingConnection()","total_count":1,"children":[]},{"name":"waitforSent()","total_count":1,"children":[]}]},{"name":"timer.cpp","total_count":4,"children":[{"name":"BEGIN_STATIC_CODE()","total_count":1,"children":[]},{"name":"getHDTimer()","total_count":1,"children":[]},{"name":"getHDTimer_us()","total_count":1,"children":[]},{"name":"HPtimer_reset()","total_count":1,"children":[]}]},{"name":"timer.h","total_count":1,"children":[{"name":"rp()","total_count":1,"children":[]}]},{"name":"winthread.hpp","total_count":5,"children":[{"name":"create()","total_count":1,"children":[]},{"name":"getPriority()","total_count":1,"children":[]},{"name":"join()","total_count":1,"children":[]},{"name":"SetSelfPriority()","total_count":1,"children":[]},{"name":"terminate()","total_count":1,"children":[]}]},{"name":"arch_win32.h","total_count":1,"children":[]}]}]},{"name":"dataunpacker","total_count":42,"children":[{"name":"dataunnpacker_internal.h","total_count":1,"children":[{"name":"IDataUnpackerHandler()","total_count":1,"children":[]}]},{"name":"dataunpacker.cpp","total_count":5,"children":[{"name":".LIDARSampleDataUnpackerImpl()","total_count":1,"children":[]},{"name":"_registerDataUnpackerHandlers()","total_count":1,"children":[]},{"name":"CreateInstance()","total_count":1,"children":[]},{"name":"LIDARSampleDataUnpackerImpl","total_count":1,"children":[]},{"name":"ReleaseInstance()","total_count":1,"children":[]}]},{"name":"dataunpacker.h","total_count":2,"children":[{"name":"LIDARSampleDataListener()","total_count":1,"children":[]},{"name":"LIDARSampleDataUnpacker()","total_count":1,"children":[]}]},{"name":"unpacker","total_count":32,"children":[{"name":"handler_capsules.cpp","total_count":17,"children":[{"name":"_getSampleDelayOffsetInDenseMode()","total_count":1,"children":[]},{"name":"_getSampleDelayOffsetInExpressMode()","total_count":1,"children":[]},{"name":"_getSampleDelayOffsetInUltraBoostMode()","total_count":1,"children":[]},{"name":"_getSampleDelayOffsetInUltraDenseMode()","total_count":1,"children":[]},{"name":"_onScanNodeCapsuleData()","total_count":1,"children":[]},{"name":"_onScanNodeDenseCapsuleData()","total_count":1,"children":[]},{"name":"_onScanNodeUltraCapsuleData()","total_count":1,"children":[]},{"name":"_onScanNodeUltraDenseCapsuleData()","total_count":1,"children":[]},{"name":"_varbitscale_decode()","total_count":1,"children":[]},{"name":"getSampleAnswerType()","total_count":1,"children":[]},{"name":"onData()","total_count":1,"children":[]},{"name":"onUnpackerContextSet()","total_count":1,"children":[]},{"name":"reset()","total_count":1,"children":[]},{"name":"UnpackerHandler_CapsuleNode()","total_count":1,"children":[]},{"name":"UnpackerHandler_DenseCapsuleNode()","total_count":1,"children":[]},{"name":"UnpackerHandler_UltraCapsuleNode()","total_count":1,"children":[]},{"name":"UnpackerHandler_UltraDenseCapsuleNode()","total_count":1,"children":[]}]},{"name":"handler_hqnode.cpp","total_count":6,"children":[{"name":"_getSampleDelayOffsetInHQMode()","total_count":1,"children":[]},{"name":"getSampleAnswerType()","total_count":1,"children":[]},{"name":"onData()","total_count":1,"children":[]},{"name":"onUnpackerContextSet()","total_count":1,"children":[]},{"name":"reset()","total_count":1,"children":[]},{"name":"UnpackerHandler_HQNode()","total_count":1,"children":[]}]},{"name":"handler_normalnode.cpp","total_count":6,"children":[{"name":"_getSampleDelayOffsetInLegacyMode()","total_count":1,"children":[]},{"name":"getSampleAnswerType()","total_count":1,"children":[]},{"name":"onData()","total_count":1,"children":[]},{"name":"onUnpackerContextSet()","total_count":1,"children":[]},{"name":"reset()","total_count":1,"children":[]},{"name":"UnpackerHandler_NormalNode()","total_count":1,"children":[]}]},{"name":"handler_capsules.h","total_count":1,"children":[]},{"name":"handler_hqnode.h","total_count":1,"children":[]},{"name":"handler_normalnode.h","total_count":1,"children":[]}]},{"name":"dataunnpacker_commondef.h","total_count":1,"children":[]},{"name":"dataupacker_namespace.h","total_count":1,"children":[]}]},{"name":"hal","total_count":16,"children":[{"name":"abs_rxtx.h","total_count":1,"children":[{"name":"rp()","total_count":1,"children":[]}]},{"name":"byteops.h","total_count":5,"children":[{"name":"__byteswap_16()","total_count":1,"children":[]},{"name":"__byteswap_32()","total_count":1,"children":[]},{"name":"__byteswap_64()","total_count":1,"children":[]},{"name":"__byteswap_double()","total_count":1,"children":[]},{"name":"__byteswap_float()","total_count":1,"children":[]}]},{"name":"event.h","total_count":1,"children":[{"name":"rp()","total_count":1,"children":[]}]},{"name":"locker.h","total_count":1,"children":[{"name":"rp()","total_count":1,"children":[]}]},{"name":"socket.h","total_count":1,"children":[{"name":"rp()","total_count":1,"children":[]}]},{"name":"thread.h","total_count":1,"children":[{"name":"rp()","total_count":1,"children":[]}]},{"name":"waiter.h","total_count":1,"children":[{"name":"rp()","total_count":1,"children":[]}]},{"name":"assert.h","total_count":1,"children":[]},{"name":"byteorder.h","total_count":1,"children":[]},{"name":"thread.cpp","total_count":1,"children":[]},{"name":"types.h","total_count":1,"children":[]},{"name":"util.h","total_count":1,"children":[]}]},{"name":"rplidar_driver.cpp","total_count":25,"children":[{"name":"ascendScanData()","total_count":1,"children":[]},{"name":"checkMotorCtrlSupport()","total_count":1,"children":[]},{"name":"connect()","total_count":1,"children":[]},{"name":"CreateDriver()","total_count":1,"children":[]},{"name":"disconnect()","total_count":1,"children":[]},{"name":"DisposeDriver()","total_count":1,"children":[]},{"name":"getAllSupportedScanModes()","total_count":1,"children":[]},{"name":"getDeviceInfo()","total_count":1,"children":[]},{"name":"getDeviceMacAddr()","total_count":1,"children":[]},{"name":"getHealth()","total_count":1,"children":[]},{"name":"getLidarIpConf()","total_count":1,"children":[]},{"name":"getScanDataWithInterval()","total_count":1,"children":[]},{"name":"getScanDataWithIntervalHq()","total_count":1,"children":[]},{"name":"getTypicalScanMode()","total_count":1,"children":[]},{"name":"grabScanDataHq()","total_count":1,"children":[]},{"name":"isConnected()","total_count":1,"children":[]},{"name":"reset()","total_count":1,"children":[]},{"name":"RPlidarDriver()","total_count":1,"children":[]},{"name":"setLidarIpConf()","total_count":1,"children":[]},{"name":"setMotorPWM()","total_count":1,"children":[]},{"name":"startMotor()","total_count":1,"children":[]},{"name":"startScan()","total_count":1,"children":[]},{"name":"startScanExpress()","total_count":1,"children":[]},{"name":"stop()","total_count":1,"children":[]},{"name":"stopMotor()","total_count":1,"children":[]}]},{"name":"sl_async_transceiver.cpp","total_count":11,"children":[{"name":"_changeBufSize()","total_count":1,"children":[]},{"name":"_proc_decoderThread()","total_count":1,"children":[]},{"name":"_proc_rxThread()","total_count":1,"children":[]},{"name":"AsyncTransceiver()","total_count":1,"children":[]},{"name":"cleanData()","total_count":1,"children":[]},{"name":"fillData()","total_count":1,"children":[]},{"name":"openChannelAndBind()","total_count":1,"children":[]},{"name":"ProtocolMessage()","total_count":1,"children":[]},{"name":"sendMessage()","total_count":1,"children":[]},{"name":"setDataBuf()","total_count":1,"children":[]},{"name":"unbindAndClose()","total_count":1,"children":[]}]},{"name":"sl_async_transceiver.h","total_count":1,"children":[{"name":"sl()","total_count":1,"children":[]}]},{"name":"sl_crc.cpp","total_count":4,"children":[{"name":"bitrev()","total_count":1,"children":[]},{"name":"cal()","total_count":1,"children":[]},{"name":"getResult()","total_count":1,"children":[]},{"name":"init()","total_count":1,"children":[]}]},{"name":"sl_lidar_driver.cpp","total_count":14,"children":[{"name":".RawSampleNodeHolder()","total_count":1,"children":[]},{"name":".ScanDataHolder()","total_count":1,"children":[]},{"name":".SlamtecLidarDriver()","total_count":1,"children":[]},{"name":"angleLessThan()","total_count":1,"children":[]},{"name":"ascendScanData_()","total_count":1,"children":[]},{"name":"convert()","total_count":1,"children":[]},{"name":"createLidarDriver()","total_count":1,"children":[]},{"name":"getAngle()","total_count":1,"children":[]},{"name":"getDistanceQ2()","total_count":1,"children":[]},{"name":"printDeprecationWarn()","total_count":1,"children":[]},{"name":"RawSampleNodeHolder","total_count":1,"children":[]},{"name":"ScanDataHolder","total_count":1,"children":[]},{"name":"setAngle()","total_count":1,"children":[]},{"name":"SlamtecLidarDriver","total_count":1,"children":[]}]},{"name":"sl_lidarprotocol_codec.cpp","total_count":7,"children":[{"name":"estimateLength()","total_count":1,"children":[]},{"name":"exitLoopMode()","total_count":1,"children":[]},{"name":"onDecodeData()","total_count":1,"children":[]},{"name":"onDecodeReset()","total_count":1,"children":[]},{"name":"onEncodeData()","total_count":1,"children":[]},{"name":"RPLidarProtocolCodec()","total_count":1,"children":[]},{"name":"setMessageListener()","total_count":1,"children":[]}]},{"name":"sl_lidarprotocol_codec.h","total_count":1,"children":[{"name":"sl()","total_count":1,"children":[]}]},{"name":"sl_serial_channel.cpp","total_count":3,"children":[{"name":".SerialPortChannel()","total_count":1,"children":[]},{"name":"createSerialPortChannel()","total_count":1,"children":[]},{"name":"SerialPortChannel","total_count":1,"children":[]}]},{"name":"sl_tcp_channel.cpp","total_count":3,"children":[{"name":".TcpChannel()","total_count":1,"children":[]},{"name":"createTcpChannel()","total_count":1,"children":[]},{"name":"TcpChannel","total_count":1,"children":[]}]},{"name":"sl_udp_channel.cpp","total_count":3,"children":[{"name":".UdpChannel()","total_count":1,"children":[]},{"name":"createUdpChannel()","total_count":1,"children":[]},{"name":"UdpChannel","total_count":1,"children":[]}]},{"name":"sdkcommon.h","total_count":1,"children":[]}]}]},{"name":"src","total_count":6,"children":[{"name":"rplidar_client.cpp","total_count":2,"children":[{"name":"main()","total_count":1,"children":[]},{"name":"scanCb()","total_count":1,"children":[]}]},{"name":"rplidar_node.cpp","total_count":4,"children":[{"name":".RPlidarNode()","total_count":1,"children":[]},{"name":"ExitHandler()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"RPlidarNode","total_count":1,"children":[]}]}]}]}]},{"name":"topic_monitor.py","total_count":26,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":"._alive()","total_count":1,"children":[]},{"name":"._cmd_vel()","total_count":1,"children":[]},{"name":"._draw()","total_count":1,"children":[]},{"name":"._elp()","total_count":1,"children":[]},{"name":"._elv()","total_count":1,"children":[]},{"name":"._emg()","total_count":1,"children":[]},{"name":"._erp()","total_count":1,"children":[]},{"name":"._erv()","total_count":1,"children":[]},{"name":"._gps()","total_count":1,"children":[]},{"name":"._hdr()","total_count":1,"children":[]},{"name":"._imu()","total_count":1,"children":[]},{"name":"._odom_filt()","total_count":1,"children":[]},{"name":"._odom_glob()","total_count":1,"children":[]},{"name":"._odom_raw()","total_count":1,"children":[]},{"name":"._rec()","total_count":1,"children":[]},{"name":"._rng()","total_count":1,"children":[]},{"name":"._st()","total_count":1,"children":[]},{"name":"._tick_hz()","total_count":1,"children":[]},{"name":"._uc()","total_count":1,"children":[]},{"name":"._ul()","total_count":1,"children":[]},{"name":"._ur()","total_count":1,"children":[]},{"name":"._uraw()","total_count":1,"children":[]},{"name":"._yaw()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"TopicMonitor","total_count":1,"children":[]}]},{"name":"record_geofence.py","total_count":1,"children":[]}]};
+
+    function transformData(jsonData) {
+        // Helper function to recursively build the children structure
+        function processNode(node, parentL1StageName) {
+            let displayName = node.name;
+            // Append total_count if it exists and is not already in the name
+            if (node.total_count !== undefined) {
+                if (!/\(Total Count: \d+\)$/.test(displayName)) {
+                    displayName += ` (Total Count: ${node.total_count})`;
+                }
+            }
+
+            const newNode = { name: displayName };
+
+            if (parentL1StageName === "Root") {
+                 newNode.originalStageName = node.name;
+            } else {
+                newNode.originalStageName = parentL1StageName;
+            }
+
+            if (node.children && node.children.length > 0) {
+                const stageNameToPass = (parentL1StageName === "Root") ? node.name : parentL1StageName;
+                newNode.children = node.children.map(child => processNode(child, stageNameToPass));
+            }
+
+            return newNode;
+        }
+
+        let rootDisplayName = jsonData.name;
+        if (jsonData.total_count !== undefined && !/\(Total Count: \d+\)$/.test(rootDisplayName)) {
+            rootDisplayName += ` (Total Count: ${jsonData.total_count})`;
+        }
+
+        return {
+            name: rootDisplayName,
+            originalStageName: "Root",
+            children: (jsonData.children || []).map(child => processNode(child, "Root"))
+        };
+    }
+
+    const treeData = transformData(initialJsonData);
+
+    // Auto-populated phaseColors: every depth-1 child of the root gets
+    // a stable colour from a bigger palette so all top-level dirs are
+    // distinguishable.
+    const PALETTE = [
+      ["#3498DB","#2980B9","#AED6F1"], ["#2ECC71","#27AE60","#A9DFBF"],
+      ["#E74C3C","#C0392B","#F5B7B1"], ["#9B59B6","#8E44AD","#D7BDE2"],
+      ["#F39C12","#D68910","#FAD7A0"], ["#1ABC9C","#117864","#A2D9CE"],
+      ["#34495E","#1B2631","#ABB2B9"], ["#E67E22","#BA4A00","#F5CBA7"],
+      ["#16A085","#0E6655","#A2D9CE"], ["#D35400","#A04000","#EDBB99"],
+      ["#7F8C8D","#566573","#D5DBDB"], ["#C0392B","#7B241C","#F5B7B1"],
+      ["#2E86C1","#1B4F72","#A9CCE3"], ["#28B463","#196F3D","#A9DFBF"],
+      ["#AF7AC5","#6C3483","#D2B4DE"],
+    ];
+    const phaseColors = { "Root": { fill: "#4A4A4A", stroke: "#333333", collapsedFill: "#6C757D" },
+                          "Default": { fill: "#BDC3C7", stroke: "#95A5A6", collapsedFill: "#ECF0F1" } };
+    (initialJsonData.children || []).forEach((c, i) => {
+      const pal = PALETTE[i % PALETTE.length];
+      phaseColors[c.name] = { fill: pal[0], stroke: pal[1], collapsedFill: pal[2] };
+    });
+
+    const levelSpecificPalettes = {
+      0: { fill: "#4A4A4A", stroke: "#333333", collapsedFill: "#6C757D" },
+      2: { fill: "#6ab04c", stroke: "#508a38", collapsedFill: "#a3d391" },
+      3: { fill: "#f0932b", stroke: "#d0730f", collapsedFill: "#f6c07e" },
+      4: { fill: "#be2edd", stroke: "#a01cb3", collapsedFill: "#e08bf2" },
+      5: { fill: "#00a8ff", stroke: "#007ac1", collapsedFill: "#74d2ff" },
+      6: { fill: "#e55039", stroke: "#c23620", collapsedFill: "#f09a8d" },
+      default: { fill: "#747d8c", stroke: "#57606f", collapsedFill: "#a4b0be" }
+    };
+
+    const svgElement = d3.select("#tree-svg");
+    const initialSvgWidth = +svgElement.attr("width");
+    const initialSvgHeight = +svgElement.attr("height");
+    const margin = { top: 40, right: 120, bottom: 80, left: 450 };
+    let width = initialSvgWidth - margin.left - margin.right;
+    let height = initialSvgHeight - margin.top - margin.bottom;
+    const duration = 500;
+    let nodeCounter = 0;
+    const g = svgElement.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+    const treemap = d3.tree().nodeSize([40, 0]);
+    let rootNode = d3.hierarchy(treeData, d => d.children);
+    rootNode.x0 = 0;
+    rootNode.y0 = 0;
+
+    if (rootNode.children) {
+      rootNode.children.forEach(d_child => {
+        if (d_child.children) { collapseBranch(d_child); }
+      });
+    }
+    updateTree(rootNode);
+
+    function collapseBranch(d) { if (d.children) { d._children = d.children; d._children.forEach(collapseBranch); d.children = null; } }
+    function expandBranch(d) { if (d._children) { d.children = d._children; d._children = null; } if (d.children) { d.children.forEach(expandBranch); } }
+    window.expandAll = () => { expandBranch(rootNode); updateTree(rootNode); };
+    window.collapseAll = () => { if (rootNode.children) { rootNode.children.forEach(collapseBranch); } updateTree(rootNode); };
+    window.resetView = () => { if (rootNode.children) { rootNode.children.forEach(d_child => { if (d_child.children || d_child._children) { collapseBranch(d_child); } }); } if (rootNode._children && !rootNode.children) { rootNode.children = rootNode._children; rootNode._children = null; } updateTree(rootNode); };
+
+    function updateTree(source) {
+      const treeLayoutData = treemap(rootNode);
+      let nodes = treeLayoutData.descendants();
+      let links = treeLayoutData.descendants().slice(1);
+
+      let minX = 0;
+      let maxX = 0;
+      if (nodes.length > 0) {
+        minX = d3.min(nodes, d => d.x);
+        maxX = d3.max(nodes, d => d.x);
+      }
+
+      let neededHeight = Math.max(initialSvgHeight, maxX - minX + margin.top + margin.bottom + 100);
+      svgElement.transition().duration(duration / 2).attr("height", neededHeight);
+      g.transition().duration(duration / 2).attr("transform", `translate(${margin.left},${margin.top - minX + 40})`);
+
+      nodes.forEach(d => { d.y = d.depth * 400; }); // Adjust horizontal separation if needed
+
+      const node = g.selectAll('g.node').data(nodes, d => d.id || (d.id = ++nodeCounter));
+      const nodeEnter = node.enter().append('g')
+        .attr('class', d => "node" + (d.children || d._children ? " node--internal" : " node--leaf") + (d._children ? " _children" : ""))
+        .attr('transform', d => `translate(${source.y0},${source.x0})`)
+        .on('click', (event, d) => { if (d.children) { d._children = d.children; d.children = null; } else if (d._children) { d.children = d._children; d._children = null; } updateTree(d); })
+        .style('cursor', d => (d.children || d._children) ? 'pointer' : 'default');
+
+      nodeEnter.append('circle').attr('r', 1e-6);
+
+      nodeEnter.append('text')
+        .attr('dy', '.35em')
+        .attr('x', d => d.children || d._children ? -14 : 14)
+        .attr('text-anchor', d => d.children || d._children ? 'end' : 'start')
+        .style("fill-opacity", 1e-6)
+        .call(wrapText, 380);
+
+      const nodeUpdate = nodeEnter.merge(node);
+      nodeUpdate.transition().duration(duration)
+        .attr('transform', d => `translate(${d.y},${d.x})`)
+        .attr('class', d => "node" + (d.children ? " node--internal" : " node--leaf") + (d._children ? " node--internal _children" : ""));
+
+      nodeUpdate.select('circle').attr('r', 8.5)
+        .style('fill', d => {
+            let palette;
+            if (d.depth === 0) {
+                palette = levelSpecificPalettes[0];
+            } else if (d.depth === 1) {
+                palette = phaseColors[d.data.originalStageName] || phaseColors.Default;
+            } else {
+                palette = levelSpecificPalettes[d.depth] || levelSpecificPalettes.default;
+            }
+            if (d._children) return palette.collapsedFill;
+            if (d.children) return palette.fill;
+            return "#fff";
+        })
+        .style('stroke', d => {
+            let palette;
+            if (d.depth === 0) {
+                palette = levelSpecificPalettes[0];
+            } else if (d.depth === 1) {
+                palette = phaseColors[d.data.originalStageName] || phaseColors.Default;
+            } else {
+                palette = levelSpecificPalettes[d.depth] || levelSpecificPalettes.default;
+            }
+            return palette.stroke;
+        });
+      nodeUpdate.select('text').style("fill-opacity", 1).call(wrapText, 380);
+
+      const nodeExit = node.exit().transition().duration(duration).attr('transform', d => `translate(${source.y},${source.x})`).remove();
+      nodeExit.select('circle').attr('r', 1e-6);
+      nodeExit.select('text').style('fill-opacity', 1e-6);
+
+      const link = g.selectAll('path.link').data(links, d => d.id);
+      const linkEnter = link.enter().insert('path', "g").attr('class', 'link').attr('d', d => { const o = { x: source.x0, y: source.y0 }; return diagonal(o, o); });
+
+      linkEnter.merge(link).transition().duration(duration).attr('d', d => diagonal(d, d.parent))
+        .style('stroke', d => {
+            const sourceNode = d.parent;
+            if (!sourceNode) return phaseColors.Default.stroke;
+            const l1AncestorName = sourceNode.data.originalStageName;
+            const colorPalette = phaseColors[l1AncestorName] || phaseColors.Default;
+            return colorPalette.stroke;
+        });
+      link.exit().transition().duration(duration).attr('d', d => { const o = { x: source.x, y: source.y }; return diagonal(o, o); }).remove();
+      nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
+    }
+
+    function diagonal(s, d) { return `M ${s.y} ${s.x} C ${(s.y + d.y) / 2} ${s.x}, ${(s.y + d.y) / 2} ${d.x}, ${d.y} ${d.x}`; }
+
+    function wrapText(textElements, maxWidth) {
+        const textPartColors = {
+            name: '#343a40',
+            count: '#0056b3'
+        };
+        const countRegex = /(\s\(Total Count: \d+\))$/;
+
+        textElements.each(function () {
+            const textD3 = d3.select(this);
+            const originalNodeText = textD3.datum().data.name;
+            const x = parseFloat(textD3.attr("x") || 0);
+            const initialDy = textD3.attr("dy");
+            const textAnchor = textD3.attr("text-anchor");
+            const lineHeight = 1.1;
+
+            textD3.text(null);
+
+            let namePart = originalNodeText;
+            let countPartText = "";
+
+            const countMatch = originalNodeText.match(countRegex);
+            if (countMatch && originalNodeText.endsWith(countMatch[0])) {
+                namePart = originalNodeText.substring(0, originalNodeText.length - countMatch[0].length).trim();
+                countPartText = countMatch[0].trim();
+            }
+
+            const tokens = [];
+            namePart.split(/\s+/).filter(Boolean).forEach(word => {
+                tokens.push({ text: word, type: 'name' });
+            });
+            if (countPartText) {
+                tokens.push({ text: countPartText, type: 'count' });
+            }
+
+            if (tokens.length === 0 && originalNodeText) {
+                tokens.push({ text: originalNodeText, type: 'name' });
+            }
+
+            let currentTspan = textD3.append("tspan").attr("x", x).attr("dy", initialDy);
+            if (textAnchor === "end") currentTspan.attr("text-anchor", "end");
+
+            let lineTokens = [];
+
+            for (let i = 0; i < tokens.length; i++) {
+                const tokenObj = tokens[i];
+
+                lineTokens.push(tokenObj);
+                currentTspan.text(lineTokens.map(t => t.text).join(" "));
+
+                if (currentTspan.node().getComputedTextLength() > maxWidth && lineTokens.length > 1) {
+                    lineTokens.pop();
+
+                    currentTspan.text(null);
+                    lineTokens.forEach((prevToken, idx) => {
+                        currentTspan.append("tspan")
+                            .text((idx > 0 ? " " : "") + prevToken.text)
+                            .style("fill", textPartColors[prevToken.type] || textPartColors.name)
+                            .style("font-weight", prevToken.type === 'count' ? "bold" : "normal");
+                    });
+
+                    lineTokens = [tokenObj];
+                    currentTspan = textD3.append("tspan").attr("x", x).attr("dy", lineHeight + "em");
+                    if (textAnchor === "end") currentTspan.attr("text-anchor", "end");
+                }
+            }
+
+            currentTspan.text(null);
+            lineTokens.forEach((token, idx) => {
+                currentTspan.append("tspan")
+                    .text((idx > 0 ? " " : "") + token.text)
+                    .style("fill", textPartColors[token.type] || textPartColors.name)
+                    .style("font-weight", token.type === 'count' ? "bold" : "normal");
+            });
+
+            if (textD3.selectAll("tspan > tspan").empty() && textD3.select("tspan").text().length === 0 && originalNodeText) {
+                let t = textD3.select("tspan");
+                let displayText = originalNodeText;
+                t.text(displayText).style("fill", textPartColors.name);
+                if (t.node() && t.node().getComputedTextLength() > maxWidth && displayText.length > 20) {
+                    let estimatedChars = Math.floor(maxWidth / (t.node().getComputedTextLength()/displayText.length) );
+                    displayText = displayText.substring(0, Math.max(0, estimatedChars - 3)) + "...";
+                    t.text(displayText);
+                }
+            }
+        });
+    }
+  </script>
+</body>
+</html>
