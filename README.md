@@ -1,4 +1,4 @@
-# 🚜 Autonomous Lawn Mower Robot — ROS 2 & STM32
+# 🚜 Autonomous Lawn Mower Robot — ROS2 & STM32
 
 <div align="center">
 
